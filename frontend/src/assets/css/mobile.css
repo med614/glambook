@@ -1,0 +1,55 @@
+/* =========================================================
+   MOBILE OVERRIDES
+========================================================= */
+
+@media (max-width: 768px) {
+  .page {
+    padding: 16px;
+  }
+
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .page-header .btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .filters-bar {
+    gap: 8px;
+  }
+
+  .filters-bar > * {
+    flex: 1;
+    min-width: 140px;
+  }
+
+  .table {
+    font-size: 12.5px;
+  }
+
+  .table thead th,
+  .table tbody td {
+    padding: 10px 12px;
+  }
+
+  .inline-fields {
+    grid-template-columns: 1fr;
+  }
+
+  .modal-actions {
+    flex-direction: column-reverse;
+  }
+
+  .modal-actions .btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .page { padding: 12px; }
+}

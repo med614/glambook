@@ -1,0 +1,32 @@
+/* =====================================
+   DARK OPS — GLOBAL THEME
+   ===================================== */
+
+   :root {
+    --bg-main: #0f1115;
+    --bg-card: #171a21;
+    --bg-card-soft: #1e222b;
+  
+    --border-soft: #2a2f3a;
+  
+    --text-main: #e6e8ee;
+    --text-muted: #9aa0ac;
+  
+    --accent-green: #22c55e;
+    --accent-blue: #3b82f6;
+    --accent-orange: #f59e0b;
+    --accent-red: #ef4444;
+  
+    --radius: 12px;
+  }
+  
+  * {
+    box-sizing: border-box;
+  }
+  
+  body {
+    margin: 0;
+    font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--bg-main);
+    color: var(--text-main);
+  }

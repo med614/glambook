@@ -1,0 +1,340 @@
+/* =========================================================
+   COMPONENTS
+========================================================= */
+
+/* =========================================================
+   LISTS
+========================================================= */
+.list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+/* =========================================================
+   CARD
+========================================================= */
+.card {
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+
+/* =========================================================
+   TABLE
+========================================================= */
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13.5px;
+  background: var(--bg-card);
+}
+
+.table thead th {
+  padding: 11px 16px;
+  background: var(--bg-soft);
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+.table thead th:first-child {
+  border-radius: 0;
+}
+
+.table tbody tr {
+  border-bottom: 1px solid var(--border);
+  transition: background 0.1s;
+}
+
+.table tbody tr:last-child {
+  border-bottom: none;
+}
+
+.table tbody tr:hover {
+  background: #F8FAFC;
+}
+
+.table tbody td {
+  padding: 13px 16px;
+  vertical-align: middle;
+  color: var(--text-main);
+}
+
+.table tbody td:first-child {
+  font-weight: 600;
+}
+
+.table td.actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+/* =========================================================
+   INPUTS (GLOBAL)
+========================================================= */
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="number"],
+input[type="date"],
+input[type="tel"],
+input[type="time"],
+select,
+textarea,
+.select,
+.input {
+  appearance: none;
+  -webkit-appearance: none;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 13.5px;
+  font-family: inherit;
+  color: var(--text-main);
+  padding: 9px 12px;
+  width: 100%;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  line-height: 1.5;
+}
+
+input:hover,
+select:hover,
+textarea:hover {
+  border-color: var(--border-strong);
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(8,145,178,0.12);
+}
+
+::placeholder {
+  color: var(--text-light);
+}
+
+/* =========================================================
+   SEARCH INPUT
+========================================================= */
+.search-input-wrap {
+  position: relative;
+}
+.search-input-wrap input {
+  padding-left: 36px;
+}
+.search-input-icon {
+  position: absolute;
+  left: 11px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-light);
+  pointer-events: none;
+}
+
+/* =========================================================
+   FILTER SPECIFICS
+========================================================= */
+.filter {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.filter select,
+.filter input {
+  height: 36px;
+  font-size: 13px;
+}
+
+/* =========================================================
+   TOGGLE
+========================================================= */
+.toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text-muted);
+  cursor: pointer;
+  user-select: none;
+}
+
+.toggle input[type="checkbox"] {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.toggle-switch {
+  position: relative;
+  width: 36px;
+  height: 20px;
+  background: var(--border-strong);
+  border-radius: 999px;
+  transition: background 0.2s ease;
+  flex-shrink: 0;
+}
+
+.toggle-switch::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  transition: transform 0.2s ease;
+}
+
+.toggle input:checked + .toggle-switch {
+  background: var(--green);
+}
+
+.toggle input:checked + .toggle-switch::after {
+  transform: translateX(16px);
+}
+
+.toggle input:checked + .toggle-switch--green {
+  background: #25D366;
+}
+
+/* =========================================================
+   FORM
+========================================================= */
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.form-group label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.form-error {
+  font-size: 11.5px;
+  color: var(--red);
+  margin-top: 3px;
+}
+
+.inline-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+/* =========================================================
+   TEXT HELPERS
+========================================================= */
+.main-line {
+  font-size: 13px;
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+.time-slot {
+  font-size: 12px;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.client { font-weight: 600; }
+.service { color: var(--text-muted); }
+.separator { margin: 0 5px; color: var(--text-light); }
+
+/* =========================================================
+   ADD / REMOVE
+========================================================= */
+.addFromList {
+  background: transparent;
+  color: var(--green);
+  font-size: 12px;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  font-family: inherit;
+}
+.addFromList:disabled { color: var(--text-light); cursor: not-allowed; }
+
+.removeFromList {
+  background: transparent;
+  border: none;
+  color: var(--red);
+  cursor: pointer;
+}
+
+/* =========================================================
+   LEGACY admin-row
+========================================================= */
+.admin-row.header {
+  background: var(--bg-soft);
+  font-size: 11px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.admin-row:not(.header) {
+  border-top: 1px solid var(--border);
+}
+.admin-row .strong { font-weight: 600; }
+
+/* =========================================================
+   STATUS BADGES — design unifié
+   Usage : <span class="status-badge status-badge--cancelled">Annulé</span>
+========================================================= */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 999px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  line-height: 1.6;
+}
+
+.status-badge--cancelled {
+  background: #fef3c7;
+  color: #b45309;
+  border: 1px solid #fde68a;
+}
+
+.status-badge--noshow {
+  background: #fee2e2;
+  color: #dc2626;
+  border: 1px solid #fca5a5;
+}
+
+.status-badge--done {
+  background: #dcfce7;
+  color: #16a34a;
+  border: 1px solid #86efac;
+}
+
+.status-badge--absent {
+  background: #fef3c7;
+  color: #b45309;
+  border: 1px solid #fde68a;
+}

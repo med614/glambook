@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run *)",
+      "Bash(which nvm *)",
+      "Read(//Users/mohamedbenmansour/.nvm/**)",
+      "Bash(~/.nvm/versions/node/v20.19.6/bin/node ~/.nvm/versions/node/v20.19.6/bin/npm run dev)",
+      "Bash(npx vue-tsc *)"
+    ]
+  }
+}

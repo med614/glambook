@@ -74,3 +74,5 @@ Ne jamais utiliser la clé `anon` côté backend.
 ---
 
 ## Constantes projet
+
+BACKEND_URL (prod)  = https://glambook-backend-4bbl.onrender.com

@@ -3,250 +3,402 @@ import { ref, computed } from 'vue'
 import BaseModal from '@/components/modal/BaseModal.vue'
 import AppIcon from '@/components/common/AppIcon.vue'
 
-const emit = defineEmits(['close', 'cancelRdv', 'noshowRdv', 'deleteRdv'])
+const props = defineProps({ rdv: { type: Object, default: null } })
+const emit = defineEmits(['close', 'editRdv', 'cancelRdv', 'noshowRdv', 'deleteRdv'])
 
-const step = ref('actions') // actions | confirm
-const selectedAction = ref(null)
 
-const actions = {
-  cancel: {
-    title: 'Annuler le rendez-vous',
-    message: 'Êtes-vous sûr de vouloir annuler ce rendez-vous ? Il sera retiré de la liste des rendez-vous planifiés.',
-    confirm: 'Confirmer l\'annulation',
-    danger: true
-  },
-  noshow: {
-    title: 'Marquer comme absent',
-    message: 'Voulez-vous marquer ce client comme absent ? Le rendez-vous sera retiré du planning.',
-    confirm: 'Confirmer l\'absence',
-    danger: true
-  },
-  delete: {
-    title: 'Supprimer définitivement',
-    message: '⚠️ Cette action est irréversible. Êtes-vous sûr de vouloir supprimer définitivement ce rendez-vous ?',
-    confirm: 'Supprimer',
-    danger: true
-  }
+// ── Résumé ─────────────────────────────────────────────────────────────────
+function one(val) { return Array.isArray(val) ? val[0] : val }
+
+function clientName() {
+  const cl = one(props.rdv?.client)
+  if (!cl) return '—'
+  return [cl.name, cl.last_name].filter(x => x?.trim()).join(' ') || '—'
+}
+function clientInitial() {
+  const name = clientName()
+  return name && name !== '—' ? name.trim().charAt(0).toUpperCase() : 'R'
+}
+function clientMeta() {
+  const cl = one(props.rdv?.client)
+  const bits = []
+  if (cl?.phone) bits.push(cl.phone)
+  if (props.rdv?.type === 'walkin') bits.push('Sans RDV')
+  return bits.join(' · ') || 'Client salon'
+}
+const isoToLocalHHMM = iso => {
+  if (!iso) return ''
+  const d = new Date(iso)
+  return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0')
+}
+function apptTime() { return isoToLocalHHMM(props.rdv?.start_time) || '—' }
+function apptEndTime() {
+  const start = props.rdv?.start_time
+  if (!start) return ''
+  const duration = (props.rdv?.appointment_services || [])
+    .filter(s => s.status !== 'cancelled')
+    .reduce((sum, s) => sum + (one(s.service)?.duration_minutes || 0), 0)
+  if (!duration) return ''
+  const end = new Date(new Date(start).getTime() + duration * 60000)
+  return isoToLocalHHMM(end.toISOString())
+}
+function timeRange() {
+  const end = apptEndTime()
+  return end ? `${apptTime()} – ${end}` : apptTime()
+}
+function apptDate() {
+  if (!props.rdv?.start_time) return '—'
+  return new Date(props.rdv.start_time).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })
+}
+function services() {
+  const list = props.rdv?.appointment_services || []
+  return list.map(s => one(s.service)?.name).filter(Boolean).join(', ') || '—'
+}
+function totalPrice() {
+  const list = (props.rdv?.appointment_services || []).filter(s => s.status !== 'cancelled')
+  const prices = list.map(s => s.price_at_booking ?? one(s.service)?.price ?? null)
+  if (prices.every(p => p === null)) return null
+  return prices.reduce((sum, p) => sum + (p ?? 0), 0)
+}
+function staffNames() {
+  const list = props.rdv?.appointment_services || []
+  const names = [...new Set(list.map(s => one(s.staff)?.name).filter(Boolean))]
+  return names.join(', ') || null
+}
+function sourceLabel() {
+  const src = props.rdv?.source
+  if (src === 'whatsapp') return 'WhatsApp'
+  if (src === 'phone') return 'Téléphone'
+  if (src === 'online') return 'En ligne'
+  return props.rdv?.type === 'walkin' ? 'Accueil salon · Sans RDV' : 'Accueil salon'
+}
+const STATUS_LABELS = { scheduled: 'Planifié', in_progress: 'En cours', completed: 'Terminé', cancelled: 'Annulé', noshow: 'Absent' }
+const STATUS_COLORS = { scheduled: 'var(--primary)', in_progress: 'var(--green)', completed: 'var(--text-muted)', cancelled: 'var(--red)', noshow: 'var(--red)' }
+function statusLabel() { return STATUS_LABELS[props.rdv?.status] || props.rdv?.status || '—' }
+function statusColor() { return STATUS_COLORS[props.rdv?.status] || 'var(--text-light)' }
+
+// ── Logique actions selon statut ────────────────────────────────────────────
+const CLOSED = ['cancelled', 'noshow', 'completed']
+const isClosed = computed(() => CLOSED.includes(props.rdv?.status))
+
+// ── Confirmation ────────────────────────────────────────────────────────────
+const confirmAction = ref(null) // null | 'cancel' | 'noshow' | 'delete'
+
+const confirmTexts = {
+  cancel: { title: 'Annuler le rendez-vous', message: 'Êtes-vous sûr de vouloir annuler ce rendez-vous ?', btn: 'Confirmer l\'annulation' },
+  noshow: { title: 'Marquer comme absent',   message: 'Marquer ce client comme absent (no-show) ?',        btn: 'Confirmer l\'absence' },
+  delete: { title: 'Supprimer définitivement', message: '⚠️ Action irréversible. Supprimer ce rendez-vous ?', btn: 'Supprimer' }
 }
 
-const current = computed(() =>
-  selectedAction.value ? actions[selectedAction.value] : null
-)
-
-function openConfirm(type) {
-  selectedAction.value = type
-  step.value = 'confirm'
-}
-
-function back() {
-  step.value = 'actions'
-  selectedAction.value = null
-}
-
-function confirm() {
-  if (selectedAction.value === 'cancel') emit('cancelRdv')
-  if (selectedAction.value === 'noshow') emit('noshowRdv')
-  if (selectedAction.value === 'delete') emit('deleteRdv')
+function askConfirm(type) { if (!isClosed.value || type === 'delete') confirmAction.value = type }
+function cancelConfirm() { confirmAction.value = null }
+function runConfirm() {
+  if (confirmAction.value === 'cancel') emit('cancelRdv')
+  if (confirmAction.value === 'noshow') emit('noshowRdv')
+  if (confirmAction.value === 'delete') emit('deleteRdv')
 }
 </script>
 
 <template>
-  <BaseModal @close="emit('close')" class="lux-modal">
-    <header class="lux-header" :class="{ 'danger-mode': step === 'confirm' }">
-      <div class="lux-icon-box" :class="{ 'danger-icon': step === 'confirm' }">
-        <AppIcon :name="step === 'actions' ? 'settings' : 'alert-triangle'" :size="22" />
+  <BaseModal @close="emit('close')">
+    <!-- Header personnalisé -->
+    <div class="modal-header">
+      <div class="modal-header-dot"></div>
+      <span class="modal-title">Détail du rendez-vous</span>
+      <button class="modal-close" @click="emit('close')">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+
+    <div class="rdv-detail-hero">
+      <div class="rdv-detail-av">{{ clientInitial() }}</div>
+      <div class="rdv-detail-client">
+        <div class="rdv-detail-name">{{ clientName() }}</div>
+        <div class="rdv-detail-meta">{{ clientMeta() }}</div>
       </div>
-      <div class="lux-titles">
-        <h2>{{ step === 'actions' ? 'Gérer ce rendez-vous' : current.title }}</h2>
-        <p>{{ step === 'actions' ? 'Sélectionnez une action administrative à effectuer' : 'Veuillez confirmer votre décision ci-dessous' }}</p>
-      </div>
-      <button class="lux-close" @click="emit('close')">&times;</button>
-    </header>
+      <span class="rdv-sum-badge" :style="{background: statusColor()+'18', color: statusColor(), border:`1px solid ${statusColor()}40`}">{{ statusLabel() }}</span>
+    </div>
 
-    <div class="lux-body">
-      <!-- ÉTAPE 1 : ACTIONS -->
-      <div v-if="step === 'actions'" class="action-list">
-        <div class="action-card" @click="openConfirm('cancel')">
-          <div class="action-icon gray">
-            <AppIcon name="x-circle" :size="18" />
-          </div>
-          <div class="action-text">
-            <strong>Le client a annulé</strong>
-            <p>Retirer proprement du planning</p>
-          </div>
-          <AppIcon name="chevron-right" :size="14" class="action-arrow" />
+    <div class="modal-body">
+      <!-- Résumé -->
+      <div class="rdv-info-grid">
+        <div class="rdv-info-row">
+          <span class="rdv-info-label">Date</span>
+          <span class="rdv-info-val">{{ apptDate() }}</span>
         </div>
-
-        <div class="action-card" @click="openConfirm('noshow')">
-          <div class="action-icon orange">
-            <AppIcon name="user-x" :size="18" />
-          </div>
-          <div class="action-text">
-            <strong>Client absent (No-show)</strong>
-            <p>Marquer l'absence au rendez-vous</p>
-          </div>
-          <AppIcon name="chevron-right" :size="14" class="action-arrow" />
+        <div class="rdv-info-row">
+          <span class="rdv-info-label">Horaire</span>
+          <span class="rdv-info-val">{{ timeRange() }}</span>
         </div>
-
-        <div class="action-card danger" @click="openConfirm('delete')">
-          <div class="action-icon red">
-            <AppIcon name="trash" :size="18" />
-          </div>
-          <div class="action-text">
-            <strong>Supprimer le RDV</strong>
-            <p>Action irréversible et radicale</p>
-          </div>
-          <AppIcon name="chevron-right" :size="14" class="action-arrow" />
+        <div class="rdv-info-row">
+          <span class="rdv-info-label">Prestations</span>
+          <span class="rdv-sum-value">{{ services() }}</span>
+        </div>
+        <div v-if="staffNames()" class="rdv-info-row">
+          <span class="rdv-info-label">Collaborateur</span>
+          <span class="rdv-info-val">{{ staffNames() }}</span>
+        </div>
+        <div class="rdv-info-row">
+          <span class="rdv-info-label">Origine</span>
+          <span class="rdv-info-val">{{ sourceLabel() }}</span>
         </div>
       </div>
 
-      <!-- ÉTAPE 2 : CONFIRMATION -->
-      <div v-else class="confirm-content">
+      <!-- Confirmation inline -->
+      <div v-if="confirmAction" class="confirm-content">
         <div class="warning-banner">
           <AppIcon name="alert-triangle" :size="16" />
-          <span>Attention, cette action ne peut pas être annulée</span>
+          <span>{{ confirmTexts[confirmAction].title }}</span>
         </div>
-        <p class="confirm-message">{{ current.message }}</p>
+        <p class="confirm-message">{{ confirmTexts[confirmAction].message }}</p>
       </div>
     </div>
 
-    <footer class="lux-footer" :class="{ 'space-between': step === 'confirm' }">
-      <button class="lux-btn secondary" @click="step === 'actions' ? emit('close') : back()">
-        {{ step === 'actions' ? 'Fermer' : 'Retour' }}
-      </button>
-      
-      <button
-        v-if="step === 'confirm'"
-        class="lux-btn"
-        :class="current.danger ? 'danger-solid' : 'primary'"
-        @click="confirm"
-      >
-        {{ current.confirm }}
-      </button>
-    </footer>
+    <div v-if="totalPrice() !== null" class="rdv-amount-row">
+      <span class="rdv-amount-label">Montant total</span>
+      <span class="rdv-amount-val">{{ totalPrice() }} DH</span>
+    </div>
+
+    <div class="modal-actions" :class="{ 'modal-actions--confirm': confirmAction }">
+      <template v-if="confirmAction">
+        <button class="btn btn-outline" @click="cancelConfirm()">Retour</button>
+        <button class="btn btn-danger-solid" @click="runConfirm">{{ confirmTexts[confirmAction].btn }}</button>
+      </template>
+      <div v-else class="rdv-footer-actions">
+        <button v-if="!isClosed" class="btn-modal-edit" @click="emit('editRdv')">Modifier</button>
+        <button v-if="!isClosed" class="btn-modal-cancel" @click="askConfirm('cancel')">Annuler</button>
+        <button v-if="!isClosed" class="btn-modal-noshow" @click="askConfirm('noshow')">Absence</button>
+        <button class="btn-modal-delete" @click="askConfirm('delete')">Supprimer</button>
+      </div>
+    </div>
   </BaseModal>
 </template>
 
 <style scoped>
-@import '@/assets/lux-modal.css';
-
-.danger-mode .lux-titles h2 {
-  color: #ef4444;
+/* ── Header spécifique (icône + sous-titre) ── */
+:deep(.modal) {
+  width: 440px;
 }
 
-.lux-icon-box.danger-icon {
-  background: linear-gradient(135deg, #fca5a5 0%, #ef4444 100%);
+.modal-header {
+  justify-content: flex-start;
 }
 
-.action-list {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.action-card {
+.rdv-detail-hero {
   display: flex;
   align-items: center;
   gap: 14px;
-  padding: 14px 16px;
-  background: #fff;
-  border: 1.5px solid #e2e8f0;
-  border-radius: 10px;
-  cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--border);
 }
 
-.action-card:hover {
-  border-color: #3182ce;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-}
-
-.action-card.danger:hover {
-  border-color: #fecaca;
-  background: #fffcfc;
-}
-
-.action-icon {
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
+.rdv-detail-av {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background: var(--primary-surface);
+  border: 1.5px solid var(--border-strong);
+  color: var(--primary);
   display: flex;
   align-items: center;
   justify-content: center;
+  font-size: 17px;
+  font-weight: 800;
   flex-shrink: 0;
 }
 
-.action-icon.gray { background: #f1f5f9; color: #64748b; }
-.action-icon.orange { background: #fff7ed; color: #f59e0b; }
-.action-icon.red { background: #fef2f2; color: #ef4444; }
-
-.action-text {
+.rdv-detail-client {
   flex: 1;
   min-width: 0;
 }
 
-.action-text strong {
-  display: block;
-  font-size: 14px;
-  font-weight: 600;
-  color: #1e293b;
-  word-wrap: break-word;
+.rdv-detail-name {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--text-main);
 }
 
-.action-text p {
-  font-size: 12px;
-  color: #64748b;
-  margin: 2px 0 0;
-  word-wrap: break-word;
+.rdv-detail-meta {
+  font-size: 11.5px;
+  color: var(--text-muted);
+  margin-top: 2px;
 }
 
-.action-arrow {
-  color: #cbd5e1;
-  transition: transform 0.2s;
+.rdv-sum-badge {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 9px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.modal-body {
+  padding: 0 24px;
+  gap: 0;
+}
+
+.rdv-info-grid {
+  display: flex;
+  flex-direction: column;
+}
+
+.rdv-info-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 11px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.rdv-info-row:last-child {
+  border-bottom: 0;
+}
+
+.rdv-info-label {
+  color: var(--text-muted);
   flex-shrink: 0;
+  font-size: 11.5px;
+  font-weight: 600;
 }
 
-.action-card:hover .action-arrow {
-  color: #3182ce;
-  transform: translateX(3px);
+.rdv-info-val,
+.rdv-sum-value {
+  color: var(--text-main);
+  font-size: 12.5px;
+  font-weight: 600;
+  text-align: right;
 }
 
-.warning-banner {
+.rdv-sum-value {
+  max-width: 250px;
+}
+
+.rdv-amount-row {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 12px 16px;
-  background: #fffbeb;
-  border: 1.5px solid #fde68a;
-  border-radius: 10px;
-  color: #92400e;
-  font-size: 13px;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 13px 24px;
+  border-top: 1px solid var(--border);
+  background: var(--bg-soft);
+}
+
+.rdv-amount-label {
+  color: var(--text-muted);
+  font-size: 12px;
   font-weight: 600;
-  margin-bottom: 16px;
 }
 
-.confirm-message {
-  font-size: 14px;
-  color: #475569;
-  line-height: 1.6;
-  margin: 0;
-  word-wrap: break-word;
-  overflow-wrap: break-word;
+.rdv-amount-val {
+  color: var(--primary);
+  font-size: 17px;
+  font-weight: 800;
 }
 
-.lux-footer.space-between {
+.rdv-footer-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+  width: 100%;
+}
+
+.modal-actions--confirm {
   justify-content: space-between;
 }
 
-.lux-btn.danger-solid {
-  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-  color: white;
-  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
+.warning-banner {
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 16px;
+  background: var(--orange-soft); border: 1px solid var(--orange);
+  border-radius: 10px; color: var(--orange);
+  font-size: 13px; font-weight: 600; margin-bottom: 16px;
 }
 
-.lux-btn.danger-solid:hover {
+.confirm-message { font-size: 14px; color: var(--text-muted); line-height: 1.6; margin: 0; word-wrap: break-word; overflow-wrap: break-word; }
+
+.btn-modal-edit,
+.btn-modal-cancel,
+.btn-modal-noshow,
+.btn-modal-delete {
+  padding: 9px 14px;
+  border-radius: 11px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .15s, border-color .15s, color .15s, transform .1s;
+}
+
+.btn-modal-edit {
+  background: transparent;
+  border: 1px solid var(--border-strong);
+  color: var(--text-main);
+}
+.btn-modal-edit:hover { background: var(--bg-soft); }
+
+.btn-modal-cancel {
+  background: transparent;
+  border: 1px solid var(--border-strong);
+  color: var(--text-muted);
+}
+.btn-modal-cancel:hover { background: rgba(0,0,0,.04); color: var(--text-main); }
+
+.btn-modal-noshow {
+  background: var(--red-soft);
+  border: 1px solid rgba(220,38,38,.2);
+  color: var(--red);
+}
+.btn-modal-noshow:hover { background: rgba(220,38,38,.18); }
+
+.btn-modal-delete {
+  background: var(--red);
+  border: 1px solid transparent;
+  color: #fff;
+  font-weight: 700;
+  box-shadow: 0 2px 8px rgba(220,38,38,.25);
+}
+.btn-modal-delete:hover {
+  background: var(--red);
+  filter: brightness(.9);
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+}
+
+.btn-danger-solid {
+  background: var(--red); color: #fff; border-color: transparent;
+  box-shadow: 0 2px 8px rgba(220,38,38,.3);
+}
+.btn-danger-solid:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(220,38,38,.4);
+}
+
+@media (max-width: 520px) {
+  .rdv-detail-hero {
+    align-items: flex-start;
+  }
+
+  .rdv-info-row {
+    gap: 10px;
+  }
+
+  .modal-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .rdv-footer-actions,
+  .modal-actions > .btn {
+    width: 100%;
+  }
+
+  .rdv-footer-actions > button,
+  .modal-actions > .btn {
+    flex: 1;
+  }
 }
 </style>

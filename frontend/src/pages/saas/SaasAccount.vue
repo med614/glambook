@@ -188,7 +188,7 @@ onMounted(load)
       <div class="saas-card">
         <div class="card-section-title">Coordonnées de contact</div>
         <div class="card-body">
-          <p class="field-hint" style="margin:0;font-size:13px;color:#64748b;">
+          <p class="field-hint" style="margin:0;font-size:13px;color:var(--text-muted);">
             Ces informations sont affichées aux organisations dont l'abonnement est suspendu.
           </p>
           <div class="form-group">
@@ -239,7 +239,7 @@ onMounted(load)
 <style scoped>
 .saas-layout {
   min-height: 100vh;
-  background: #f1f5f9;
+  background: var(--bg-soft);
   display: flex;
   flex-direction: column;
 }
@@ -251,8 +251,8 @@ onMounted(load)
   justify-content: space-between;
   padding: 0 32px;
   height: 64px;
-  background: #0f172a;
-  border-bottom: 1px solid #1e293b;
+  background: var(--text-main);
+  border-bottom: 1px solid var(--bg-soft);
   position: sticky;
   top: 0;
   z-index: 100;
@@ -262,26 +262,26 @@ onMounted(load)
 .saas-brand { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
 .saas-brand-icon {
   width: 36px; height: 36px;
-  background: linear-gradient(135deg, #6366f1, #3b82f6);
+  background: linear-gradient(135deg, var(--primary), var(--primary-light));
   border-radius: 10px;
   display: flex; align-items: center; justify-content: center;
   color: #fff;
 }
 .saas-brand-text { display: flex; flex-direction: column; }
 .saas-brand-name { font-size: 15px; font-weight: 800; color: #fff; letter-spacing: -.3px; }
-.saas-brand-tag  { font-size: 10px; font-weight: 600; color: #6366f1; text-transform: uppercase; letter-spacing: .08em; }
+.saas-brand-tag  { font-size: 10px; font-weight: 600; color: var(--primary); text-transform: uppercase; letter-spacing: .08em; }
 
 .saas-nav { display: flex; align-items: center; gap: 4px; flex: 1; }
 .saas-nav-link {
   padding: 7px 14px;
   border-radius: 8px;
   font-size: 13px; font-weight: 600;
-  color: #94a3b8;
+  color: var(--text-light);
   text-decoration: none;
   transition: all .15s;
 }
-.saas-nav-link:hover { color: #fff; background: #1e293b; }
-.saas-nav-link.router-link-active { color: #fff; background: #1e293b; }
+.saas-nav-link:hover { color: #fff; background: var(--primary-soft); }
+.saas-nav-link.router-link-active { color: #fff; background: var(--primary-soft); }
 
 .saas-topbar-right { display: flex; align-items: center; gap: 20px; flex-shrink: 0; }
 
@@ -289,14 +289,14 @@ onMounted(load)
   display: flex; align-items: center; gap: 6px;
   padding: 7px 14px;
   background: transparent;
-  border: 1px solid #334155;
+  border: 1px solid var(--border-strong);
   border-radius: 8px;
-  color: #94a3b8;
+  color: var(--text-light);
   font-size: 12.5px; font-weight: 600;
   cursor: pointer;
   transition: all .15s;
 }
-.saas-logout:hover { background: #1e293b; color: #fff; border-color: #475569; }
+.saas-logout:hover { background: var(--primary-soft); color: #fff; border-color: var(--primary-mid); }
 
 /* Main */
 .saas-main {
@@ -311,40 +311,40 @@ onMounted(load)
 }
 
 .saas-page-header { margin-bottom: 4px; }
-.saas-page-title { font-size: 22px; font-weight: 800; color: #0f172a; margin: 0; }
-.saas-page-desc  { font-size: 13px; color: #64748b; margin: 4px 0 0; }
+.saas-page-title { font-size: 22px; font-weight: 800; color: var(--text-main); margin: 0; }
+.saas-page-desc  { font-size: 13px; color: var(--text-muted); margin: 4px 0 0; }
 
 /* Hero */
 .account-hero {
   display: flex;
   align-items: center;
   gap: 18px;
-  background: linear-gradient(135deg, #0f172a, #1e293b);
+  background: linear-gradient(135deg, var(--text-main), #2A2618);
   border-radius: 16px;
   padding: 24px 28px;
 }
 .account-avatar {
   width: 60px; height: 60px; border-radius: 50%;
-  background: linear-gradient(135deg, #6366f1, #3b82f6);
+  background: linear-gradient(135deg, var(--primary), var(--primary-light));
   color: #fff; font-size: 24px; font-weight: 800;
   display: flex; align-items: center; justify-content: center; flex-shrink: 0;
 }
 .account-name  { font-size: 18px; font-weight: 700; color: #fff; }
-.account-email { font-size: 13px; color: #94a3b8; margin-top: 2px; }
+.account-email { font-size: 13px; color: var(--text-light); margin-top: 2px; }
 .account-role-badge {
   display: inline-block; margin-top: 8px;
   padding: 3px 10px;
-  background: rgba(99,102,241,.2);
-  border: 1px solid rgba(99,102,241,.3);
+  background: var(--primary-soft);
+  border: 1px solid var(--primary-glow);
   border-radius: 999px;
-  font-size: 11px; font-weight: 700; color: #a5b4fc;
+  font-size: 11px; font-weight: 700; color: var(--primary);
   text-transform: uppercase; letter-spacing: .06em;
 }
 
 /* Card */
 .saas-card {
   background: #fff;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border-strong);
   border-radius: 14px;
   overflow: hidden;
   box-shadow: 0 1px 4px rgba(0,0,0,.04);
@@ -352,29 +352,29 @@ onMounted(load)
 .card-section-title {
   padding: 16px 24px;
   font-size: 12px; font-weight: 700; text-transform: uppercase;
-  letter-spacing: .07em; color: #64748b;
-  border-bottom: 1px solid #f1f5f9;
-  background: #f8fafc;
+  letter-spacing: .07em; color: var(--text-muted);
+  border-bottom: 1px solid var(--bg-soft);
+  background: var(--bg-main);
 }
 .card-body { padding: 24px; display: flex; flex-direction: column; gap: 18px; }
 
 /* Form */
 .form-group { display: flex; flex-direction: column; gap: 6px; }
-.form-group label { font-size: 12.5px; font-weight: 700; color: #374151; }
+.form-group label { font-size: 12.5px; font-weight: 700; color: var(--text-muted); }
 .form-group input {
   height: 40px;
-  border: 1.5px solid #e2e8f0;
+  border: 1.5px solid var(--border-strong);
   border-radius: 8px;
   padding: 0 12px;
   font-size: 13.5px;
-  color: #1e293b;
+  color: var(--text-main);
   background: #fff;
   outline: none;
   transition: border-color .15s;
 }
-.form-group input:focus { border-color: #6366f1; }
-.input-disabled { background: #f8fafc !important; color: #94a3b8 !important; cursor: not-allowed; }
-.field-hint { font-size: 11.5px; color: #94a3b8; margin: 0; }
+.form-group input:focus { border-color: var(--primary); }
+.input-disabled { background: var(--bg-main) !important; color: var(--text-light) !important; cursor: not-allowed; }
+.field-hint { font-size: 11.5px; color: var(--text-light); margin: 0; }
 
 .form-footer {
   display: flex; align-items: center; justify-content: flex-end; gap: 12px;
@@ -386,14 +386,14 @@ onMounted(load)
 .saas-btn-primary {
   display: flex; align-items: center; gap: 7px;
   padding: 10px 20px;
-  background: linear-gradient(135deg, #6366f1, #3b82f6);
+  background: linear-gradient(135deg, var(--primary), var(--primary-light));
   color: #fff;
   border: none;
   border-radius: 10px;
   font-size: 13.5px; font-weight: 700;
   cursor: pointer;
   white-space: nowrap;
-  box-shadow: 0 2px 8px rgba(99,102,241,.3);
+  box-shadow: 0 2px 8px var(--primary-glow);
   transition: opacity .15s;
 }
 .saas-btn-primary:disabled { opacity: .6; cursor: not-allowed; }

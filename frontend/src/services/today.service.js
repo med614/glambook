@@ -23,8 +23,7 @@ export const todayService = {
 import { supabase } from '@/lib/supabase'
 
 function localNowIso() {
-  const now = new Date()
-  return now.toLocaleDateString('en-CA') + 'T' + now.toTimeString().substring(0, 8)
+  return new Date().toISOString()
 }
 
 export async function closeDay(date) {

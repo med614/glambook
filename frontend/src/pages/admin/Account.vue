@@ -36,46 +36,56 @@ function openEmail() {
   window.location.href = `mailto:${saasSettings.value.contact_email}`
 }
 
-const orgId      = ref(null)
-const orgName    = ref('')
-const orgLogo    = ref(null)
-const orgLoading = ref(false)
-const orgMsg     = ref({ type: '', text: '' })
-const logoFile   = ref(null)
+const orgId       = ref(null)
+const orgName     = ref('')
+const orgLogo     = ref(null)
+const logoKey     = ref(Date.now())
+const orgLoading  = ref(false)
+const orgMsg      = ref({ type: '', text: '' })
+const logoFile    = ref(null)
 const logoPreview = ref(null)
+
+// Cache-bust: ajoute ?v=timestamp pour forcer le rechargement de l'image
+const logoSrc = computed(() => {
+  if (logoPreview.value) return logoPreview.value
+  if (!orgLogo.value) return null
+  return `${orgLogo.value}?v=${logoKey.value}`
+})
 
 onMounted(async () => {
   const { data } = await supabase.auth.getUser()
-  if (data?.user) {
-    const meta = data.user.user_metadata || {}
-    const { data: org } = await supabase
-      .from('organizations')
-      .select('id, admin_name, name, logo_url')
-      .eq('supabase_user_id', data.user.id)
-      .single()
+  if (!data?.user) return
+  const meta = data.user.user_metadata || {}
 
-    user.value = {
-      id:    data.user.id,
-      email: data.user.email,
-      name:  org?.admin_name || meta.admin_name || meta.name || data.user.email,
-      role:  meta.role || 'admin'
-    }
-    newEmail.value = data.user.email
-    if (org) {
-      orgId.value   = org.id
-      orgName.value = org.name || ''
-      orgLogo.value = org.logo_url || null
+  // Admins : org liée via supabase_user_id. Managers : org_id dans les métadonnées
+  const orgQuery = meta.role === 'manager'
+    ? supabase.from('organizations').select('id, admin_name, name, logo_url').eq('id', meta.org_id).single()
+    : supabase.from('organizations').select('id, admin_name, name, logo_url').eq('supabase_user_id', data.user.id).single()
 
-      // Load subscription & payments
-      const [sub, pays, settings] = await Promise.all([
-        fetchSubscription(org.id),
-        fetchPayments(org.id),
-        fetchSaasSettings()
-      ])
-      subscription.value = sub
-      payments.value     = pays.slice(0, 6)
-      saasSettings.value = settings
-    }
+  const { data: org } = await orgQuery
+
+  user.value = {
+    id:    data.user.id,
+    email: data.user.email,
+    name:  org?.admin_name || meta.admin_name || meta.name || data.user.email,
+    role:  meta.role || 'admin'
+  }
+  newEmail.value = data.user.email
+
+  if (org) {
+    orgId.value   = org.id
+    orgName.value = org.name || ''
+    orgLogo.value = org.logo_url || null
+    logoKey.value = Date.now()
+
+    const [sub, pays, settings] = await Promise.all([
+      fetchSubscription(org.id),
+      fetchPayments(org.id),
+      fetchSaasSettings()
+    ])
+    subscription.value = sub
+    payments.value     = pays.slice(0, 6)
+    saasSettings.value = settings
   }
 })
 
@@ -117,9 +127,10 @@ async function saveOrg() {
     }).eq('id', orgId.value)
 
     orgLogo.value  = logoUrl
+    logoKey.value  = Date.now()
     logoFile.value = null
+    logoPreview.value = null
     orgMsg.value   = { type: 'success', text: 'Informations du salon mises à jour.' }
-    // Notify sidebar to refresh
     window.dispatchEvent(new Event('org-updated'))
   } catch (e) {
     orgMsg.value = { type: 'danger', text: e.message }
@@ -313,7 +324,7 @@ onMounted(() => { if (isAdmin.value) loadManagers() })
           </div>
 
           <div v-else class="info-row">
-            <span class="info-label" style="color:#94a3b8;font-style:italic;">Aucun abonnement trouvé</span>
+            <span class="info-label" style="color:var(--text-light);font-style:italic;">Aucun abonnement trouvé</span>
           </div>
         </div>
       </div>
@@ -335,7 +346,7 @@ onMounted(() => { if (isAdmin.value) loadManagers() })
           <!-- Logo -->
           <div class="logo-section">
             <div class="logo-preview-wrap">
-              <img v-if="logoPreview || orgLogo" :src="logoPreview || orgLogo" alt="Logo" class="logo-preview" />
+              <img v-if="logoSrc" :src="logoSrc" alt="Logo" class="logo-preview" />
               <div v-else class="logo-placeholder">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
               </div>
@@ -346,7 +357,7 @@ onMounted(() => { if (isAdmin.value) loadManagers() })
                 Choisir un logo
                 <input type="file" accept="image/*" @change="onLogoChange" style="display:none" />
               </label>
-              <button v-if="logoPreview || orgLogo" class="logo-remove-btn" @click="removeLogo">Supprimer</button>
+              <button v-if="logoSrc" class="logo-remove-btn" @click="removeLogo">Supprimer</button>
               <p class="logo-hint">PNG, JPG ou SVG — max 2 Mo</p>
             </div>
           </div>
@@ -519,7 +530,7 @@ onMounted(() => { if (isAdmin.value) loadManagers() })
           <div v-else-if="managers.length" style="display:flex;flex-direction:column;gap:8px;">
             <div
               v-for="m in managers" :key="m.id"
-              style="display:flex;align-items:center;gap:12px;padding:10px 14px;border:1px solid var(--border);border-radius:8px;background:#fff;"
+              style="display:flex;align-items:center;gap:12px;padding:10px 14px;border:1px solid var(--border);border-radius:8px;background:var(--bg-card);"
             >
               <div style="width:34px;height:34px;border-radius:50%;background:var(--primary-soft);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:var(--primary);flex-shrink:0;">
                 {{ (m.name || m.email).charAt(0).toUpperCase() }}
@@ -530,10 +541,10 @@ onMounted(() => { if (isAdmin.value) loadManagers() })
               </div>
               <span
                 style="font-size:10px;font-weight:700;text-transform:uppercase;padding:3px 8px;border-radius:6px;flex-shrink:0;"
-                :style="m.confirmed ? 'background:#dcfce7;color:#166534' : 'background:#fef3c7;color:#92400e'"
+                :style="m.confirmed ? 'background:var(--green-soft);color:var(--green)' : 'background:var(--orange-soft);color:var(--orange)'"
               >{{ m.confirmed ? 'Actif' : 'En attente' }}</span>
               <button
-                style="width:30px;height:30px;border:none;background:transparent;color:#94a3b8;cursor:pointer;border-radius:6px;display:flex;align-items:center;justify-content:center;"
+                style="width:30px;height:30px;border:none;background:transparent;color:var(--text-light);cursor:pointer;border-radius:6px;display:flex;align-items:center;justify-content:center;"
                 @click="removeMg(m.id)"
                 title="Supprimer"
               >
@@ -587,8 +598,8 @@ onMounted(() => { if (isAdmin.value) loadManagers() })
 }
 .card-icon {
   width: 40px; height: 40px; border-radius: 10px;
-  background: linear-gradient(135deg, #e0e7ff, #dbeafe);
-  color: #3b82f6;
+  background: var(--primary-soft);
+  color: var(--primary);
   display: flex; align-items: center; justify-content: center;
   flex-shrink: 0;
 }
@@ -612,9 +623,9 @@ onMounted(() => { if (isAdmin.value) loadManagers() })
 .role-badge {
   display: inline-block;
   padding: 2px 10px; border-radius: 999px;
-  background: #e0e7ff; color: #4338ca;
+  background: var(--primary-soft); color: var(--primary);
   font-size: 11.5px; font-weight: 700;
-  border: 1px solid #c7d2fe;
+  border: 1px solid rgba(168,129,10,.25);
 }
 
 .field { display: flex; flex-direction: column; gap: 6px; }
@@ -631,21 +642,21 @@ onMounted(() => { if (isAdmin.value) loadManagers() })
   transition: border-color .15s;
 }
 .input-wrap input:focus {
-  outline: none; border-color: #6366f1;
-  background: #fff;
-  box-shadow: 0 0 0 3px rgba(99,102,241,.1);
+  outline: none; border-color: var(--primary);
+  background: var(--bg-card);
+  box-shadow: 0 0 0 3px var(--input-focus-ring);
 }
 .field > input {
   padding: 9px 12px;
-  border: 1.5px solid var(--border, #e2e8f0);
+  border: 1px solid var(--border-strong);
   border-radius: 9px;
-  font-size: 13.5px; color: var(--text-main, #0f172a);
-  background: var(--bg-soft, #f8fafc);
+  font-size: 13.5px; color: var(--text-main);
+  background: var(--bg-main);
   transition: border-color .15s;
 }
 .field > input:focus {
-  outline: none; border-color: #6366f1; background: #fff;
-  box-shadow: 0 0 0 3px rgba(99,102,241,.1);
+  outline: none; border-color: var(--primary); background: var(--bg-card);
+  box-shadow: 0 0 0 3px var(--input-focus-ring);
 }
 
 .eye-btn {
@@ -661,18 +672,18 @@ onMounted(() => { if (isAdmin.value) loadManagers() })
   padding: 9px 13px; border-radius: 8px;
   font-size: 13px; font-weight: 600;
 }
-.alert.success { background: #f0fdf4; color: #16a34a; border: 1px solid #86efac; }
-.alert.danger  { background: #fef2f2; color: #dc2626; border: 1px solid #fca5a5; }
+.alert.success { background: var(--green-soft); color: var(--green); border: 1px solid rgba(21,128,61,.25); }
+.alert.danger  { background: var(--red-soft);   color: var(--red);   border: 1px solid rgba(220,38,38,.25); }
 
 .btn-primary {
   padding: 10px 20px; align-self: flex-start;
-  background: linear-gradient(135deg, #6366f1, #3b82f6);
-  color: #fff; border: none; border-radius: 9px;
+  background: var(--primary);
+  color: #fff; border: none; border-radius: var(--radius);
   font-size: 13.5px; font-weight: 700; cursor: pointer;
-  box-shadow: 0 2px 8px rgba(99,102,241,.25);
-  transition: opacity .15s;
+  box-shadow: 0 0 18px var(--primary-glow);
+  transition: background .15s, transform .1s;
 }
-.btn-primary:hover:not(:disabled) { opacity: .9; }
+.btn-primary:hover:not(:disabled) { background: var(--primary-light); transform: translateY(-1px); }
 .btn-primary:disabled { opacity: .5; cursor: not-allowed; }
 
 /* ── Logo salon ── */
@@ -699,10 +710,10 @@ onMounted(() => { if (isAdmin.value) loadManagers() })
   font-weight: 600; color: var(--text-main, #0f172a);
   cursor: pointer; transition: all .15s; width: fit-content;
 }
-.logo-upload-btn:hover { border-color: #6366f1; color: #6366f1; background: #eff6ff; }
+.logo-upload-btn:hover { border-color: var(--primary); color: var(--primary); background: var(--primary-soft); }
 .logo-remove-btn {
   background: none; border: none; font-size: 12.5px;
-  color: #dc2626; cursor: pointer; font-weight: 600;
+  color: var(--red); cursor: pointer; font-weight: 600;
   padding: 0; text-align: left; width: fit-content;
 }
 .logo-remove-btn:hover { text-decoration: underline; }
@@ -714,20 +725,20 @@ onMounted(() => { if (isAdmin.value) loadManagers() })
   padding: 3px 10px; border-radius: 999px;
   font-size: 11.5px; font-weight: 700;
 }
-.sub-badge--trial     { background: #eef2ff; color: #4338ca; border: 1px solid #c7d2fe; }
-.sub-badge--active    { background: #dcfce7; color: #166534; border: 1px solid #86efac; }
-.sub-badge--suspended { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
-.sub-badge--cancelled { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
+.sub-badge--trial     { background: var(--primary-soft); color: var(--primary);    border: 1px solid rgba(168,129,10,.25); }
+.sub-badge--active    { background: var(--green-soft);   color: var(--green);      border: 1px solid rgba(21,128,61,.25); }
+.sub-badge--suspended { background: var(--orange-soft);  color: var(--orange);     border: 1px solid rgba(217,119,6,.25); }
+.sub-badge--cancelled { background: var(--red-soft);     color: var(--red);        border: 1px solid rgba(220,38,38,.25); }
 
 /* ── Suspended warning ── */
 .sub-warning {
   display: flex; align-items: flex-start; gap: 8px;
-  background: #fff7ed;
-  border: 1px solid #fed7aa;
+  background: var(--orange-soft);
+  border: 1px solid rgba(217,119,6,.25);
   border-radius: 9px;
   padding: 10px 12px;
   font-size: 13px;
-  color: #9a3412;
+  color: var(--orange);
   font-weight: 500;
   line-height: 1.5;
 }
@@ -742,8 +753,8 @@ onMounted(() => { if (isAdmin.value) loadManagers() })
   transition: opacity .15s;
 }
 .sub-contact-btn:hover { opacity: .85; }
-.sub-contact-btn.whatsapp { background: #22c55e; color: #fff; }
-.sub-contact-btn.email    { background: linear-gradient(135deg, #6366f1, #3b82f6); color: #fff; }
+.sub-contact-btn.whatsapp { background: var(--whatsapp); color: #fff; }
+.sub-contact-btn.email    { background: var(--primary); color: #fff; }
 
 /* ── Payments ── */
 .payments-section {
@@ -754,7 +765,7 @@ onMounted(() => { if (isAdmin.value) loadManagers() })
 }
 .payments-title {
   font-size: 11.5px; font-weight: 700; text-transform: uppercase;
-  letter-spacing: .06em; color: #94a3b8;
+  letter-spacing: .06em; color: var(--text-light);
 }
 .payment-list { display: flex; flex-direction: column; gap: 2px; }
 .payment-row {
@@ -764,9 +775,9 @@ onMounted(() => { if (isAdmin.value) loadManagers() })
   font-size: 13px;
 }
 .payment-row:last-child { border-bottom: none; }
-.payment-date   { color: #64748b; font-size: 12px; font-weight: 600; min-width: 90px; flex-shrink: 0; }
-.payment-note   { flex: 1; color: #475569; }
-.payment-amount { font-weight: 700; color: #0f172a; white-space: nowrap; }
+.payment-date   { color: var(--text-muted); font-size: 12px; font-weight: 600; min-width: 90px; flex-shrink: 0; }
+.payment-note   { flex: 1; color: var(--text-muted); }
+.payment-amount { font-weight: 700; color: var(--text-main); white-space: nowrap; }
 
 @media (max-width: 640px) {
   .account-grid { gap: 14px; }

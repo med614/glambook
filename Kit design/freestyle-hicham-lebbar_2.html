@@ -1,0 +1,1073 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FREE STYLE — Hicham & Sanae Lebbar · Fès</title>
+<link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,wght@0,400;0,700;0,900;1,400;1,700&family=Jost:wght@200;300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:    #09080a;
+  --gold:  #c4953a;
+  --gold2: #e8c46a;
+  --cream: #f2ede4;
+  --dim:   rgba(242,237,228,.5);
+  --gray:  #161418;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{
+  background:var(--bg);
+  color:var(--cream);
+  font-family:'Jost',sans-serif;
+  font-weight:300;
+  overflow-x:hidden;
+  cursor:none;
+}
+
+/* ── SCISSORS CURSOR ── */
+#scissors{
+  position:fixed;
+  width:40px;height:40px;
+  pointer-events:none;
+  z-index:9999;
+  transform:translate(-6px,-6px) rotate(-30deg);
+  filter:drop-shadow(0 0 7px rgba(196,149,58,.6));
+  transition:filter .2s;
+}
+#scissors.snip{ animation:snip .18s ease; }
+@keyframes snip{
+  0%,100%{transform:translate(-6px,-6px) rotate(-30deg)}
+  50%    {transform:translate(-6px,-6px) rotate(0deg)}
+}
+
+/* ── GRAIN ── */
+body::after{
+  content:'';position:fixed;inset:0;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.88' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.06'/%3E%3C/svg%3E");
+  pointer-events:none;z-index:9990;opacity:.5;
+}
+
+/* ── NAV ── */
+nav{
+  position:fixed;top:0;left:0;right:0;z-index:100;
+  padding:24px 60px;
+  display:flex;align-items:center;justify-content:space-between;
+  background:linear-gradient(to bottom,rgba(9,8,10,.98),transparent);
+  animation:fD .8s ease both;
+}
+@keyframes fD{from{opacity:0;transform:translateY(-14px)}to{opacity:1;transform:translateY(0)}}
+
+.logo{ display:flex;flex-direction:column;line-height:1.1; }
+.logo-top{
+  font-family:'Bodoni Moda',serif;
+  font-size:1.45rem;font-weight:900;letter-spacing:.28em;
+  text-transform:uppercase;color:var(--gold2);
+}
+.logo-bot{
+  font-size:.48rem;letter-spacing:.38em;text-transform:uppercase;
+  color:rgba(242,237,228,.38);margin-top:2px;
+}
+.nav-r{display:flex;align-items:center;gap:32px;}
+.nav-tel{
+  font-size:.6rem;letter-spacing:.16em;color:var(--dim);
+  text-decoration:none;transition:color .3s;
+}
+.nav-tel:hover{color:var(--gold2);}
+.nav-btn{
+  background:transparent;border:1px solid var(--gold);color:var(--gold);
+  padding:9px 24px;font-family:'Jost',sans-serif;font-size:.6rem;
+  letter-spacing:.22em;text-transform:uppercase;cursor:none;
+  transition:all .35s;overflow:hidden;position:relative;
+}
+.nav-btn::before{
+  content:'';position:absolute;inset:0;background:var(--gold);
+  transform:translateX(-101%);transition:transform .35s;
+}
+.nav-btn:hover::before{transform:translateX(0);}
+.nav-btn span{position:relative;z-index:1;}
+.nav-btn:hover span{color:var(--bg);}
+
+/* ── HERO ── */
+.hero{
+  min-height:100vh;
+  display:grid;grid-template-columns:1fr 1fr;
+  position:relative;overflow:hidden;
+}
+
+.hero-l{
+  display:flex;flex-direction:column;justify-content:center;
+  padding:120px 60px 80px;
+  position:relative;z-index:2;
+}
+
+.pill{
+  display:inline-flex;align-items:center;gap:9px;
+  border:1px solid rgba(196,149,58,.3);background:rgba(196,149,58,.07);
+  padding:6px 15px;width:fit-content;margin-bottom:36px;
+  opacity:0;animation:fU .9s ease .3s both;
+}
+.pill-dot{width:5px;height:5px;background:var(--gold2);border-radius:50%;animation:pulse 2s ease-in-out infinite;}
+@keyframes pulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.5);opacity:.5}}
+.pill-txt{font-size:.52rem;letter-spacing:.3em;text-transform:uppercase;color:var(--gold2);}
+
+.hero-h{
+  font-family:'Bodoni Moda',serif;
+  font-size:clamp(3.8rem,5.8vw,6.5rem);
+  line-height:.95;font-weight:900;
+  margin-bottom:26px;
+  opacity:0;animation:fU .9s ease .5s both;
+}
+.hero-h em{
+  display:block;font-style:italic;font-weight:400;
+  color:var(--gold2);font-size:.82em;
+}
+
+.hero-sub{
+  font-size:.82rem;line-height:2;color:var(--dim);
+  max-width:340px;margin-bottom:44px;
+  opacity:0;animation:fU .9s ease .72s both;
+}
+
+.cta-wrap{opacity:0;animation:fU .9s ease .9s both;}
+.cta-big{
+  display:inline-flex;align-items:center;
+  background:var(--gold);color:var(--bg);
+  font-family:'Jost',sans-serif;font-size:.68rem;
+  font-weight:500;letter-spacing:.25em;text-transform:uppercase;
+  border:none;cursor:none;overflow:hidden;position:relative;
+  transition:all .4s;
+}
+.cta-big-txt{padding:18px 38px;position:relative;z-index:1;}
+.cta-big-arrow{
+  padding:18px 22px;border-left:1px solid rgba(0,0,0,.18);
+  position:relative;z-index:1;font-size:1rem;
+  transition:transform .3s;
+}
+.cta-big:hover .cta-big-arrow{transform:translateX(4px);}
+.cta-big::before{
+  content:'';position:absolute;inset:0;background:var(--gold2);
+  transform:translateX(-101%);transition:transform .45s;
+}
+.cta-big:hover::before{transform:translateX(0);}
+
+.hero-stats{
+  display:flex;gap:40px;margin-top:52px;
+  padding-top:32px;border-top:1px solid rgba(242,237,228,.07);
+  opacity:0;animation:fU .9s ease 1.1s both;
+}
+.st-v{font-family:'Bodoni Moda',serif;font-size:1.9rem;font-weight:700;color:var(--gold2);}
+.st-l{font-size:.52rem;letter-spacing:.22em;text-transform:uppercase;color:rgba(242,237,228,.38);margin-top:3px;}
+@keyframes fU{from{opacity:0;transform:translateY(26px)}to{opacity:1;transform:translateY(0)}}
+
+/* HERO RIGHT — Artistic SVG */
+.hero-r{
+  position:relative;overflow:hidden;
+  display:flex;align-items:center;justify-content:center;
+  background:var(--bg);
+}
+#art-canvas{
+  position:absolute;inset:0;width:100%;height:100%;
+}
+.hero-veil{
+  position:absolute;inset:0;
+  background:linear-gradient(90deg,var(--bg) 0%,rgba(9,8,10,0) 28%),
+             linear-gradient(0deg,var(--bg) 0%,rgba(9,8,10,0) 20%);
+  z-index:2;
+}
+.fcard{
+  position:absolute;z-index:4;
+  background:rgba(9,8,10,.88);backdrop-filter:blur(22px);
+  border:1px solid rgba(196,149,58,.22);padding:20px 26px;
+  animation:float 6s ease-in-out infinite;
+}
+.fc-bot{bottom:80px;right:36px;}
+.fc-top{top:120px;right:52px;animation-delay:3s;}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+.fc-lbl{font-size:.48rem;letter-spacing:.28em;text-transform:uppercase;color:var(--gold);margin-bottom:6px;}
+.fc-v{font-family:'Bodoni Moda',serif;font-size:1.35rem;font-weight:700;}
+.fc-s{font-size:.58rem;color:rgba(242,237,228,.42);margin-top:3px;}
+.fc-stars{color:var(--gold2);font-size:10px;letter-spacing:3px;margin-top:8px;}
+.loreal-tag{
+  position:absolute;top:32px;left:32px;z-index:4;
+  background:rgba(9,8,10,.85);backdrop-filter:blur(16px);
+  border:1px solid rgba(196,149,58,.28);
+  padding:10px 18px;
+  display:flex;align-items:center;gap:10px;
+  animation:float 5s ease-in-out infinite;
+}
+.loreal-lbl{font-size:.5rem;letter-spacing:.2em;text-transform:uppercase;color:var(--gold2);}
+
+/* ── TICKER ── */
+.ticker{
+  border-top:1px solid rgba(196,149,58,.1);
+  border-bottom:1px solid rgba(196,149,58,.1);
+  background:rgba(196,149,58,.02);
+  overflow:hidden;padding:14px 0;
+}
+.ticker-tr{
+  display:flex;gap:64px;white-space:nowrap;
+  animation:tick 24s linear infinite;
+}
+.ticker-tr:hover{animation-play-state:paused;}
+@keyframes tick{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+.ti{
+  display:flex;align-items:center;gap:24px;flex-shrink:0;
+  font-size:.58rem;letter-spacing:.24em;text-transform:uppercase;
+  color:rgba(242,237,228,.38);
+}
+.ti-sep{color:var(--gold);font-size:8px;}
+
+/* ── BOOKING ── */
+.booking{
+  padding:110px 0;
+  position:relative;overflow:hidden;
+  background:var(--bg);
+}
+.booking-bg-txt{
+  position:absolute;
+  font-family:'Bodoni Moda',serif;
+  font-size:22vw;font-weight:900;
+  color:rgba(196,149,58,.025);
+  top:50%;left:50%;
+  transform:translate(-50%,-54%);
+  white-space:nowrap;pointer-events:none;
+  letter-spacing:-.02em;
+}
+.booking::before{
+  content:'';position:absolute;left:50%;top:0;bottom:0;
+  width:1px;background:rgba(196,149,58,.07);pointer-events:none;
+}
+.bk-inner{
+  max-width:1180px;margin:0 auto;padding:0 60px;
+  display:grid;grid-template-columns:1fr 1fr;gap:100px;align-items:start;
+  position:relative;z-index:1;
+}
+
+/* Info left */
+.bk-eyebrow{
+  display:flex;align-items:center;gap:12px;
+  font-size:.54rem;letter-spacing:.34em;text-transform:uppercase;color:var(--gold);
+  margin-bottom:18px;
+}
+.bk-eyebrow::before{content:'';display:block;width:28px;height:1px;background:var(--gold);}
+.bk-title{
+  font-family:'Bodoni Moda',serif;
+  font-size:clamp(2.6rem,4vw,4.2rem);font-weight:900;line-height:1;
+  margin-bottom:22px;
+}
+.bk-title em{display:block;font-style:italic;font-weight:400;color:var(--gold2);font-size:.85em;}
+.bk-desc{font-size:.78rem;line-height:2;color:var(--dim);margin-bottom:40px;max-width:380px;}
+
+/* Service pills */
+.sc-div{display:flex;align-items:center;gap:14px;margin-bottom:14px;}
+.sc-line{flex:1;height:1px;background:linear-gradient(to right,rgba(196,149,58,.25),transparent);}
+.sc-ico{color:var(--gold);animation:osciss 3s ease-in-out infinite;}
+@keyframes osciss{0%,100%{transform:rotate(0)}50%{transform:rotate(-28deg)}}
+
+.svc-pills{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:40px;}
+.sp{
+  padding:7px 14px;border:1px solid rgba(242,237,228,.1);
+  font-size:.58rem;letter-spacing:.14em;text-transform:uppercase;
+  transition:all .3s;cursor:none;
+}
+.sp:hover,.sp.sel{border-color:var(--gold);color:var(--gold2);background:rgba(196,149,58,.08);}
+
+.cc{
+  display:flex;align-items:center;gap:16px;padding:15px 18px;
+  border:1px solid rgba(242,237,228,.06);
+  transition:border-color .3s,background .3s;margin-bottom:10px;
+}
+.cc:hover{border-color:rgba(196,149,58,.25);background:rgba(196,149,58,.04);}
+.cc-ico{
+  width:34px;height:34px;border:1px solid rgba(196,149,58,.22);
+  display:flex;align-items:center;justify-content:center;font-size:.9rem;flex-shrink:0;
+}
+.cc-l{font-size:.5rem;letter-spacing:.22em;text-transform:uppercase;color:var(--gold);margin-bottom:3px;}
+.cc-v{font-size:.74rem;}
+.cc-v a{color:var(--cream);text-decoration:none;}
+
+/* Form right */
+.bk-form{
+  background:var(--gray);
+  border:1px solid rgba(196,149,58,.12);
+  padding:46px 42px;
+  position:sticky;top:100px;
+}
+.form-top{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:32px;padding-bottom:22px;
+  border-bottom:1px solid rgba(242,237,228,.06);
+}
+.form-title{font-family:'Bodoni Moda',serif;font-size:1.3rem;font-weight:700;}
+.form-title em{font-style:italic;color:var(--gold2);font-weight:400;}
+.form-badge{
+  font-size:.48rem;letter-spacing:.2em;text-transform:uppercase;
+  color:var(--gold);border:1px solid rgba(196,149,58,.3);padding:5px 10px;
+}
+.fg{display:flex;flex-direction:column;gap:8px;margin-bottom:18px;}
+.fg-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.fl{font-size:.5rem;letter-spacing:.28em;text-transform:uppercase;color:var(--gold);}
+.fi,.fs{
+  background:rgba(242,237,228,.03);border:none;
+  border-bottom:1px solid rgba(242,237,228,.1);
+  color:var(--cream);padding:12px 0;
+  font-family:'Jost',sans-serif;font-size:.8rem;font-weight:300;
+  outline:none;transition:border-color .3s;width:100%;cursor:none;
+}
+.fi::placeholder{color:rgba(242,237,228,.2);}
+.fi:focus,.fs:focus{border-bottom-color:var(--gold);}
+.fs{
+  appearance:none;background-color:transparent;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23c4953a' stroke-width='1.3' fill='none'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 0 center;
+}
+.fs option{background:#161418;}
+.time-label{font-size:.5rem;letter-spacing:.28em;text-transform:uppercase;color:var(--gold);margin-bottom:10px;}
+.slots{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-bottom:22px;}
+.slot{
+  padding:9px 4px;text-align:center;border:1px solid rgba(242,237,228,.08);
+  font-size:.64rem;cursor:none;transition:all .28s;letter-spacing:.03em;
+}
+.slot:hover:not(.off){border-color:var(--gold);color:var(--gold2);background:rgba(196,149,58,.08);}
+.slot.on{border-color:var(--gold2);color:var(--gold2);background:rgba(196,149,58,.12);}
+.slot.off{opacity:.25;cursor:not-allowed;text-decoration:line-through;}
+.sub-btn{
+  width:100%;background:var(--gold);color:var(--bg);border:none;
+  padding:17px 36px;font-family:'Jost',sans-serif;font-size:.65rem;
+  font-weight:500;letter-spacing:.28em;text-transform:uppercase;cursor:none;
+  position:relative;overflow:hidden;transition:all .4s;
+  display:flex;align-items:center;justify-content:center;gap:12px;
+}
+.sub-btn::before{
+  content:'';position:absolute;inset:0;background:var(--gold2);
+  transform:translateX(-101%);transition:transform .45s;
+}
+.sub-btn:hover::before{transform:translateX(0);}
+.sub-btn > *{position:relative;z-index:1;}
+.form-note{
+  margin-top:12px;text-align:center;
+  font-size:.52rem;letter-spacing:.12em;color:rgba(242,237,228,.26);
+}
+
+/* ── ABOUT ── */
+.about{
+  padding:88px 0;
+  border-top:1px solid rgba(196,149,58,.08);
+  background:linear-gradient(0deg,rgba(196,149,58,.04),transparent);
+}
+.about-inner{
+  max-width:1180px;margin:0 auto;padding:0 60px;
+  display:grid;grid-template-columns:1.2fr 1fr;
+  gap:80px;align-items:center;
+}
+.about-art{position:relative;aspect-ratio:4/3;overflow:hidden;}
+#hair-art{width:100%;height:100%;}
+.about-eyebrow{
+  display:flex;align-items:center;gap:12px;
+  font-size:.52rem;letter-spacing:.34em;text-transform:uppercase;color:var(--gold);
+  margin-bottom:14px;
+}
+.about-eyebrow::before{content:'';display:block;width:26px;height:1px;background:var(--gold);}
+.about-title{
+  font-family:'Bodoni Moda',serif;
+  font-size:clamp(2rem,3vw,3rem);font-weight:700;line-height:1.05;
+  margin-bottom:20px;
+}
+.about-title em{font-style:italic;font-weight:400;color:var(--gold2);}
+.about-txt{font-size:.78rem;line-height:2;color:var(--dim);margin-bottom:32px;}
+.insta-btn{
+  display:inline-flex;align-items:center;gap:12px;
+  border:1px solid rgba(196,149,58,.28);padding:12px 22px;
+  font-size:.58rem;letter-spacing:.2em;text-transform:uppercase;
+  color:var(--gold);text-decoration:none;transition:all .3s;cursor:none;
+}
+.insta-btn:hover{background:rgba(196,149,58,.08);border-color:var(--gold);}
+
+/* ── FOOTER ── */
+.ft{padding:60px 0 0;border-top:1px solid rgba(242,237,228,.05);}
+.ft-inner{
+  max-width:1180px;margin:0 auto;padding:0 60px;
+  display:grid;grid-template-columns:1.6fr 1fr 1fr;gap:56px;
+  margin-bottom:44px;
+}
+.ft-logo{font-family:'Bodoni Moda',serif;font-size:1.6rem;font-weight:900;letter-spacing:.22em;text-transform:uppercase;color:var(--gold2);margin-bottom:6px;}
+.ft-sub{font-size:.48rem;letter-spacing:.3em;text-transform:uppercase;color:rgba(242,237,228,.35);margin-bottom:16px;}
+.ft-desc{font-size:.73rem;line-height:1.9;color:rgba(242,237,228,.35);max-width:240px;}
+.ft-h{font-size:.52rem;letter-spacing:.28em;text-transform:uppercase;color:var(--gold);margin-bottom:20px;}
+.ft-ul{list-style:none;display:flex;flex-direction:column;gap:10px;}
+.ft-ul a,.ft-ul li{color:rgba(242,237,228,.4);text-decoration:none;font-size:.72rem;transition:color .3s;}
+.ft-ul a:hover{color:var(--gold2);}
+.ft-bot{
+  border-top:1px solid rgba(242,237,228,.04);
+  padding:20px 60px;
+  display:flex;align-items:center;justify-content:space-between;
+}
+.ft-copy{font-size:.56rem;color:rgba(242,237,228,.2);letter-spacing:.1em;}
+.socs{display:flex;gap:10px;}
+.soc{
+  width:32px;height:32px;border:1px solid rgba(242,237,228,.1);
+  display:flex;align-items:center;justify-content:center;
+  color:rgba(242,237,228,.4);text-decoration:none;font-size:.65rem;
+  transition:all .3s;cursor:none;font-weight:500;
+}
+.soc:hover{border-color:var(--gold);color:var(--gold2);}
+
+/* ── TOAST ── */
+.toast{
+  position:fixed;bottom:32px;right:32px;z-index:9980;
+  background:var(--gold);color:var(--bg);
+  padding:15px 26px;font-size:.66rem;font-weight:500;
+  letter-spacing:.14em;text-transform:uppercase;
+  display:flex;align-items:center;gap:10px;
+  transform:translateY(80px);opacity:0;
+  transition:all .5s cubic-bezier(.4,0,.2,1);
+}
+.toast.show{transform:none;opacity:1;}
+
+.rev{opacity:0;transform:translateY(30px);transition:opacity .85s ease,transform .85s ease;}
+.rev.v{opacity:1;transform:none;}
+.rev2{opacity:0;transform:translateY(30px);transition:opacity .85s .14s ease,transform .85s .14s ease;}
+.rev2.v{opacity:1;transform:none;}
+</style>
+</head>
+<body>
+
+<!-- SCISSORS SVG CURSOR -->
+<svg id="scissors" style="position:fixed;pointer-events:none;z-index:9999;width:42px;height:42px;" viewBox="0 0 70 70" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <ellipse cx="16" cy="12" rx="10" ry="5.5" transform="rotate(-32 16 12)" stroke="#e8c46a" stroke-width="1.8" fill="rgba(9,8,10,.6)"/>
+  <ellipse cx="16" cy="30" rx="10" ry="5.5" transform="rotate(32 16 30)" stroke="#e8c46a" stroke-width="1.8" fill="rgba(9,8,10,.6)"/>
+  <circle cx="28" cy="21" r="2.8" fill="#c4953a"/>
+  <circle cx="28" cy="21" r="1.4" fill="#e8c46a"/>
+  <line x1="28" y1="18.5" x2="68" y2="6"  stroke="#c4953a" stroke-width="2.2" stroke-linecap="round"/>
+  <line x1="28" y1="23.5" x2="68" y2="36" stroke="#c4953a" stroke-width="2.2" stroke-linecap="round"/>
+</svg>
+
+<!-- NAV -->
+<nav>
+  <div class="logo">
+    <div class="logo-top">Free Style</div>
+    <div class="logo-bot">Hicham & Sanae Lebbar · Fès · Maroc</div>
+  </div>
+  <div class="nav-r">
+    <a class="nav-tel" href="tel:0661935412">📞 06 61 935 412</a>
+    <button class="nav-btn" onclick="goBook()"><span>Réserver →</span></button>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-l">
+    <div class="pill">
+      <span class="pill-dot"></span>
+      <span class="pill-txt">Salon Expert L'Oréal PRO · Fès</span>
+    </div>
+    <h1 class="hero-h">
+      Votre<br>Beauté,<br><em>Réinventée.</em>
+    </h1>
+    <p class="hero-sub">
+      Coiffure, Maquillage, Nailbar & Esthétique. Une expérience sur-mesure par Hicham & Sanae Lebbar — au cœur de Fès.
+    </p>
+    <div class="cta-wrap">
+      <button class="cta-big" onclick="goBook()">
+        <span class="cta-big-txt">Prendre Rendez-vous</span>
+        <span class="cta-big-arrow">→</span>
+      </button>
+    </div>
+    <div class="hero-stats">
+      <div><div class="st-v">58K</div><div class="st-l">Abonnés</div></div>
+      <div><div class="st-v">+10</div><div class="st-l">Ans d'expertise</div></div>
+      <div><div class="st-v">★ 4.9</div><div class="st-l">Note Google</div></div>
+    </div>
+  </div>
+
+  <!-- RIGHT artistic -->
+  <div class="hero-r">
+    <svg id="art-canvas" viewBox="0 0 700 900" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <radialGradient id="glow1" cx="50%" cy="40%" r="55%">
+          <stop offset="0%" stop-color="#c4953a" stop-opacity=".18"/>
+          <stop offset="100%" stop-color="#09080a" stop-opacity="0"/>
+        </radialGradient>
+        <radialGradient id="glow2" cx="70%" cy="70%" r="45%">
+          <stop offset="0%" stop-color="#e8c46a" stop-opacity=".1"/>
+          <stop offset="100%" stop-color="#09080a" stop-opacity="0"/>
+        </radialGradient>
+        <filter id="blur8"><feGaussianBlur stdDeviation="8"/></filter>
+        <filter id="blur3"><feGaussianBlur stdDeviation="3"/></filter>
+      </defs>
+      <rect width="700" height="900" fill="#09080a"/>
+      <rect width="700" height="900" fill="url(#glow1)"/>
+      <rect width="700" height="900" fill="url(#glow2)"/>
+
+      <!-- Blurred bg strands -->
+      <g filter="url(#blur3)" opacity=".5">
+        <path d="M100,0 C130,150 70,300 120,480 C160,620 120,750 90,900" stroke="#c4953a" stroke-width="1.8" fill="none"/>
+        <path d="M220,0 C200,130 250,260 210,420 C175,560 220,700 240,900" stroke="#e8c46a" stroke-width="1.2" fill="none"/>
+        <path d="M340,0 C310,160 380,320 340,490 C305,640 350,760 360,900" stroke="#c4953a" stroke-width="1.5" fill="none"/>
+        <path d="M460,0 C440,140 490,280 460,440 C430,590 470,720 480,900" stroke="#e8c46a" stroke-width="1" fill="none"/>
+        <path d="M580,0 C560,120 610,250 570,400 C535,540 580,680 600,900" stroke="#c4953a" stroke-width="1.3" fill="none"/>
+      </g>
+
+      <!-- Animated hero strands -->
+      <g opacity=".85">
+        <path d="M160,0 C190,180 130,360 180,550 C220,700 185,810 160,900" stroke="#c4953a" stroke-width="2.2" fill="none" opacity=".55">
+          <animate attributeName="d" dur="9s" repeatCount="indefinite" calcMode="spline" keySplines=".4,0,.2,1;.4,0,.2,1"
+            values="M160,0 C190,180 130,360 180,550 C220,700 185,810 160,900;
+                    M172,0 C205,192 145,374 196,564 C237,714 200,822 175,900;
+                    M160,0 C190,180 130,360 180,550 C220,700 185,810 160,900"/>
+        </path>
+        <path d="M290,0 C260,200 320,380 280,560 C245,710 285,810 300,900" stroke="#e8c46a" stroke-width="1.5" fill="none" opacity=".42">
+          <animate attributeName="d" dur="11s" repeatCount="indefinite" calcMode="spline" keySplines=".4,0,.2,1;.4,0,.2,1"
+            values="M290,0 C260,200 320,380 280,560 C245,710 285,810 300,900;
+                    M302,0 C272,212 334,394 296,574 C258,724 298,822 314,900;
+                    M290,0 C260,200 320,380 280,560 C245,710 285,810 300,900"/>
+        </path>
+        <path d="M420,0 C450,170 390,340 440,520 C480,670 445,790 430,900" stroke="#c4953a" stroke-width="2" fill="none" opacity=".48">
+          <animate attributeName="d" dur="13s" repeatCount="indefinite" calcMode="spline" keySplines=".4,0,.2,1;.4,0,.2,1"
+            values="M420,0 C450,170 390,340 440,520 C480,670 445,790 430,900;
+                    M432,0 C465,182 405,354 456,534 C496,684 460,802 446,900;
+                    M420,0 C450,170 390,340 440,520 C480,670 445,790 430,900"/>
+        </path>
+        <path d="M560,0 C530,150 590,300 550,470 C515,620 555,740 570,900" stroke="#e8c46a" stroke-width="1.3" fill="none" opacity=".36">
+          <animate attributeName="d" dur="10s" repeatCount="indefinite" calcMode="spline" keySplines=".4,0,.2,1;.4,0,.2,1"
+            values="M560,0 C530,150 590,300 550,470 C515,620 555,740 570,900;
+                    M572,0 C544,162 604,314 564,484 C528,634 568,752 584,900;
+                    M560,0 C530,150 590,300 550,470 C515,620 555,740 570,900"/>
+        </path>
+      </g>
+
+      <!-- Central glow -->
+      <ellipse cx="350" cy="420" rx="150" ry="200" fill="#c4953a" opacity=".04" filter="url(#blur8)">
+        <animate attributeName="opacity" dur="4s" values=".04;.1;.04" repeatCount="indefinite"/>
+      </ellipse>
+
+      <!-- Large scissors art center -->
+      <g transform="translate(230,340)" opacity=".28">
+        <ellipse cx="55" cy="30" rx="36" ry="16" transform="rotate(-32 55 30)" fill="none" stroke="#e8c46a" stroke-width="1.8"/>
+        <ellipse cx="55" cy="78" rx="36" ry="16" transform="rotate(32 55 78)" fill="none" stroke="#e8c46a" stroke-width="1.8"/>
+        <circle cx="82" cy="54" r="6" fill="#c4953a"/>
+        <circle cx="82" cy="54" r="3" fill="#e8c46a"/>
+        <line x1="82" y1="48.5" x2="240" y2="10" stroke="#c4953a" stroke-width="2.8" stroke-linecap="round"/>
+        <line x1="82" y1="59.5" x2="240" y2="98" stroke="#c4953a" stroke-width="2.8" stroke-linecap="round"/>
+      </g>
+
+      <!-- Text branding -->
+      <text x="350" y="485" text-anchor="middle" font-family="'Bodoni Moda',serif" font-size="15" fill="#e8c46a" opacity=".4" font-style="italic">L'Art de votre beauté</text>
+      <text x="350" y="504" text-anchor="middle" font-family="'Jost',sans-serif" font-size="7" fill="#c4953a" opacity=".3" letter-spacing="6">FREE STYLE · FÈS · MAROC</text>
+
+      <!-- Particles -->
+      <circle cx="185" cy="160" r="1.8" fill="#e8c46a" opacity=".55">
+        <animate attributeName="opacity" dur="4s" values=".55;.15;.55" repeatCount="indefinite"/>
+      </circle>
+      <circle cx="500" cy="260" r="2.2" fill="#c4953a" opacity=".45">
+        <animate attributeName="opacity" dur="6s" values=".45;.1;.45" repeatCount="indefinite"/>
+      </circle>
+      <circle cx="310" cy="620" r="1.5" fill="#e8c46a" opacity=".4">
+        <animate attributeName="cy" dur="5s" values="620;608;620" repeatCount="indefinite"/>
+      </circle>
+      <circle cx="130" cy="740" r="1.2" fill="#c4953a" opacity=".4">
+        <animate attributeName="cy" dur="7s" values="740;726;740" repeatCount="indefinite"/>
+      </circle>
+
+      <!-- Thin horizontal rule -->
+      <line x1="0" y1="450" x2="700" y2="450" stroke="#c4953a" stroke-width=".3" opacity=".1"/>
+    </svg>
+
+    <div class="hero-veil"></div>
+
+    <div class="loreal-tag">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+        <path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6L12 2z" fill="#e8c46a"/>
+      </svg>
+      <span class="loreal-lbl">Salon Expert L'Oréal PRO officiel</span>
+    </div>
+    <div class="fcard fc-top">
+      <div class="fc-lbl">Prochain créneau</div>
+      <div class="fc-v">Aujourd'hui</div>
+      <div class="fc-s">10h30 · 14h00 · 17h00</div>
+    </div>
+    <div class="fcard fc-bot">
+      <div class="fc-lbl">Note clients</div>
+      <div class="fc-v">★ 4.9 / 5</div>
+      <div class="fc-s">+500 avis Google vérifiés</div>
+      <div class="fc-stars">★ ★ ★ ★ ★</div>
+    </div>
+  </div>
+</section>
+
+<!-- TICKER -->
+<div class="ticker">
+  <div class="ticker-tr">
+    <div class="ti"><span class="ti-sep">✦</span>Coiffure & Brushing</div>
+    <div class="ti"><span class="ti-sep">✦</span>Coloration L'Oréal PRO</div>
+    <div class="ti"><span class="ti-sep">✦</span>Balayage & Ombré</div>
+    <div class="ti"><span class="ti-sep">✦</span>Makeup Artist</div>
+    <div class="ti"><span class="ti-sep">✦</span>Nailbar & Esthétique</div>
+    <div class="ti"><span class="ti-sep">✦</span>Lissage Kératine</div>
+    <div class="ti"><span class="ti-sep">✦</span>Coiffure Mariée</div>
+    <div class="ti"><span class="ti-sep">✦</span>Extensions Capillaires</div>
+    <div class="ti"><span class="ti-sep">✦</span>Coiffure & Brushing</div>
+    <div class="ti"><span class="ti-sep">✦</span>Coloration L'Oréal PRO</div>
+    <div class="ti"><span class="ti-sep">✦</span>Balayage & Ombré</div>
+    <div class="ti"><span class="ti-sep">✦</span>Makeup Artist</div>
+    <div class="ti"><span class="ti-sep">✦</span>Nailbar & Esthétique</div>
+    <div class="ti"><span class="ti-sep">✦</span>Lissage Kératine</div>
+    <div class="ti"><span class="ti-sep">✦</span>Coiffure Mariée</div>
+    <div class="ti"><span class="ti-sep">✦</span>Extensions Capillaires</div>
+  </div>
+</div>
+
+<!-- BOOKING -->
+<section class="booking" id="booking">
+  <div class="booking-bg-txt">RÉSERVER</div>
+  <div class="bk-inner">
+
+    <!-- LEFT -->
+    <div class="rev">
+      <div class="bk-eyebrow">Réservation en ligne</div>
+      <h2 class="bk-title">Votre<br>prochain<br><em>rendez-vous.</em></h2>
+      <p class="bk-desc">Réservez en quelques clics. Confirmation immédiate par WhatsApp. Annulation gratuite jusqu'à 24h avant.</p>
+
+      <div class="sc-div">
+        <div class="sc-line"></div>
+        <div class="sc-ico">✂</div>
+        <div class="sc-line" style="background:linear-gradient(to left,rgba(196,149,58,.25),transparent);"></div>
+      </div>
+      <p style="font-size:.54rem;letter-spacing:.26em;text-transform:uppercase;color:rgba(242,237,228,.32);margin-bottom:12px;">Sélectionnez votre service</p>
+      <div class="svc-pills" id="svcPills">
+        <div class="sp-loading">Chargement des services…</div>
+      </div>
+
+      <div class="cc">
+        <div class="cc-ico">📞</div>
+        <div>
+          <div class="cc-l">WhatsApp / Tél</div>
+          <div class="cc-v">
+            <a href="tel:0661935412">06 61 935 412</a> · <a href="tel:0671432700">06 71 432 700</a>
+          </div>
+        </div>
+      </div>
+      <div class="cc">
+        <div class="cc-ico">🕐</div>
+        <div>
+          <div class="cc-l">Horaires</div>
+          <div class="cc-v">Tous les jours · 9h00 – 20h00</div>
+        </div>
+      </div>
+      <div class="cc">
+        <div class="cc-ico">📍</div>
+        <div>
+          <div class="cc-l">Adresse</div>
+          <div class="cc-v">Avenue Allal El Fassi · Fès, Maroc</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT FORM -->
+    <div class="bk-form rev2">
+      <div class="form-top">
+        <div class="form-title">Votre <em>séance</em></div>
+        <div class="form-badge">Gratuit & Rapide</div>
+      </div>
+
+      <div class="fg-row" style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:18px;">
+        <div class="fg" style="margin-bottom:0">
+          <label class="fl">Prénom</label>
+          <input class="fi" type="text" placeholder="Fatima" id="fn">
+        </div>
+        <div class="fg" style="margin-bottom:0">
+          <label class="fl">Nom</label>
+          <input class="fi" type="text" placeholder="Alaoui" id="ln">
+        </div>
+      </div>
+
+      <div class="fg">
+        <label class="fl">WhatsApp / Téléphone</label>
+        <input class="fi" type="tel" placeholder="+212 6 XX XX XX XX" id="ph">
+      </div>
+
+      <div class="fg">
+        <label class="fl">Service sélectionné</label>
+        <input class="fi" type="text" placeholder="← Cliquez un service à gauche" id="svcInp" readonly style="font-size:.72rem;">
+      </div>
+
+      <div class="fg-row" style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:18px;">
+        <div class="fg" style="margin-bottom:0">
+          <label class="fl">Date souhaitée</label>
+          <input class="fi" type="date" id="dt" onchange="loadSlots()">
+        </div>
+        <div class="fg" style="margin-bottom:0">
+          <label class="fl">Spécialiste</label>
+          <select class="fs fi" id="sp" onchange="loadSlots()">
+            <option value="">Sans préférence</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="time-label">Créneau horaire</div>
+      <div class="slots" id="slots">
+        <div class="slot off" style="grid-column:1/-1;text-align:center;font-size:.6rem;letter-spacing:.14em;">Sélectionnez une date</div>
+      </div>
+
+      <button class="sub-btn" onclick="submit()">
+        <span>Confirmer mon RDV</span>
+        <span style="font-size:1rem;">✂</span>
+      </button>
+      <p class="form-note">Confirmation gratuite par WhatsApp · Annulation libre 24h avant</p>
+    </div>
+
+  </div>
+</section>
+
+<!-- ABOUT -->
+<section class="about">
+  <div class="about-inner">
+    <div class="about-art rev">
+      <svg id="hair-art" viewBox="0 0 500 380" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <radialGradient id="ag1" cx="50%" cy="50%" r="60%">
+            <stop offset="0%" stop-color="#c4953a" stop-opacity=".15"/>
+            <stop offset="100%" stop-color="#09080a" stop-opacity="0"/>
+          </radialGradient>
+        </defs>
+        <rect width="500" height="380" fill="#0e0c10"/>
+        <rect width="500" height="380" fill="url(#ag1)"/>
+        <!-- Frame -->
+        <rect x="14" y="14" width="472" height="352" fill="none" stroke="#c4953a" stroke-width=".5" opacity=".28"/>
+        <rect x="20" y="20" width="460" height="340" fill="none" stroke="#e8c46a" stroke-width=".25" opacity=".14"/>
+        <!-- Strands -->
+        <path d="M55,0 C80,60 45,130 85,190 C125,250 90,330 70,380" stroke="#c4953a" stroke-width="1.4" fill="none" opacity=".55"/>
+        <path d="M130,0 C110,70 155,140 120,210 C88,275 125,330 145,380" stroke="#e8c46a" stroke-width=".9" fill="none" opacity=".42"/>
+        <path d="M210,0 C235,80 190,165 225,245 C255,315 220,350 205,380" stroke="#c4953a" stroke-width="1.1" fill="none" opacity=".5"/>
+        <path d="M295,0 C265,90 305,175 270,255 C240,325 278,355 295,380" stroke="#e8c46a" stroke-width=".85" fill="none" opacity=".38"/>
+        <path d="M375,0 C400,75 360,158 392,235 C420,305 388,348 370,380" stroke="#c4953a" stroke-width="1.2" fill="none" opacity=".48"/>
+        <path d="M450,0 C425,80 462,165 435,245 C408,322 442,355 455,380" stroke="#e8c46a" stroke-width=".75" fill="none" opacity=".35"/>
+        <!-- Big scissors -->
+        <g transform="translate(148,105)" opacity=".55">
+          <ellipse cx="54" cy="28" rx="33" ry="15" transform="rotate(-32 54 28)" fill="none" stroke="#e8c46a" stroke-width="1.6"/>
+          <ellipse cx="54" cy="72" rx="33" ry="15" transform="rotate(32 54 72)" fill="none" stroke="#e8c46a" stroke-width="1.6"/>
+          <circle cx="80" cy="50" r="5.5" fill="#c4953a"/>
+          <circle cx="80" cy="50" r="2.5" fill="#e8c46a"/>
+          <line x1="80" y1="45" x2="210" y2="10" stroke="#c4953a" stroke-width="2.6" stroke-linecap="round"/>
+          <line x1="80" y1="55" x2="210" y2="90" stroke="#c4953a" stroke-width="2.6" stroke-linecap="round"/>
+        </g>
+        <!-- Text -->
+        <text x="250" y="205" text-anchor="middle" font-family="'Bodoni Moda',serif" font-size="12.5" fill="#e8c46a" opacity=".5" font-style="italic">L'Art de votre beauté</text>
+        <text x="250" y="222" text-anchor="middle" font-family="'Jost',sans-serif" font-size="7" fill="#c4953a" opacity=".35" letter-spacing="5">FREE STYLE · FÈS · MAROC</text>
+        <!-- Corner ornaments -->
+        <g stroke="#c4953a" stroke-width=".6" opacity=".3" fill="none">
+          <path d="M14,14 L38,14 M14,14 L14,38"/>
+          <path d="M486,14 L462,14 M486,14 L486,38"/>
+          <path d="M14,366 L38,366 M14,366 L14,342"/>
+          <path d="M486,366 L462,366 M486,366 L486,342"/>
+        </g>
+        <!-- Particles -->
+        <circle cx="78" cy="195" r="1.8" fill="#e8c46a" opacity=".45"/>
+        <circle cx="418" cy="88" r="1.4" fill="#c4953a" opacity=".4"/>
+        <circle cx="248" cy="55" r="1" fill="#e8c46a" opacity=".38"/>
+        <circle cx="382" cy="308" r="1.8" fill="#c4953a" opacity=".38"/>
+      </svg>
+    </div>
+    <div class="rev2">
+      <div class="about-eyebrow">À propos du salon</div>
+      <h2 class="about-title">Free Style by<br><em>Hicham & Sanae</em></h2>
+      <p class="about-txt">
+        Centre de beauté d'excellence à Fès, partenaire officiel L'Oréal PRO. Hicham & Sanae Lebbar ont bâti un espace où chaque visite devient une transformation mémorable.
+        <br><br>
+        Coiffure, maquillage, nailbar, esthétique — une équipe passionnée au service de votre beauté.
+      </p>
+      <a class="insta-btn" href="https://www.instagram.com/hichamlebbarofficial/" target="_blank">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
+          <rect x="2" y="2" width="20" height="20" rx="5" stroke="#c4953a" stroke-width="1.5"/>
+          <circle cx="12" cy="12" r="4.5" stroke="#c4953a" stroke-width="1.5"/>
+          <circle cx="17.5" cy="6.5" r="1.2" fill="#c4953a"/>
+        </svg>
+        @hichamlebbarofficial &nbsp;·&nbsp; 58K abonnés
+        <svg width="13" height="9" viewBox="0 0 18 10" fill="none">
+          <path d="M1 5h16M11 1l5 4-5 4" stroke="#c4953a" stroke-width="1.3" stroke-linecap="round"/>
+        </svg>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer class="ft">
+  <div class="ft-inner">
+    <div>
+      <div class="ft-logo">Free Style</div>
+      <div class="ft-sub">Hicham & Sanae Lebbar · Fès, Maroc</div>
+      <p class="ft-desc">Centre de beauté premium. Salon Expert L'Oréal PRO. Coiffure, Makeup, Nailbar & Esthétique.</p>
+    </div>
+    <div>
+      <div class="ft-h">Contact</div>
+      <ul class="ft-ul">
+        <li><a href="tel:0661935412">06 61 935 412</a></li>
+        <li><a href="tel:0671432700">06 71 432 700</a></li>
+        <li><a href="tel:0535651470">05 35 651 470</a></li>
+        <li>Av. Allal El Fassi, Fès</li>
+      </ul>
+    </div>
+    <div>
+      <div class="ft-h">Horaires</div>
+      <ul class="ft-ul">
+        <li>Lun – Dim : 9h – 20h</li>
+        <li style="margin-top:8px;color:rgba(242,237,228,.25);font-size:.68rem;">Sur RDV ou sans RDV</li>
+      </ul>
+    </div>
+  </div>
+  <div class="ft-bot">
+    <span class="ft-copy">© 2025 Free Style by Hicham & Sanae Lebbar</span>
+    <div class="socs">
+      <a class="soc" href="https://www.instagram.com/hichamlebbarofficial/" target="_blank">ig</a>
+      <a class="soc" href="#">wa</a>
+      <a class="soc" href="#">fb</a>
+    </div>
+  </div>
+</footer>
+
+<div class="toast" id="toast">✂ &nbsp; RDV confirmé ! On vous contacte sur WhatsApp.</div>
+
+<script>
+/* ── CONFIG ── */
+const API   = 'https://glambook-backend-4bbl.onrender.com'
+const ORG   = '77748ee2-0bba-429b-a696-f710ed523e7e'
+
+/* ── STATE ── */
+let selectedSvcId   = null
+let selectedSvcName = null
+let selectedSvcPrice= null
+
+/* ── SCISSORS CURSOR ── */
+const sc = document.getElementById('scissors')
+let lx = 0, angle = -30
+document.addEventListener('mousemove', e => {
+  sc.style.left = e.clientX + 'px'
+  sc.style.top  = e.clientY + 'px'
+  const dir = e.clientX - lx
+  if (Math.abs(dir) > 1) {
+    angle = dir > 0 ? -20 : -42
+    sc.style.transform = `translate(-6px,-6px) rotate(${angle}deg)`
+  }
+  lx = e.clientX
+})
+document.addEventListener('mousedown', () => {
+  sc.classList.add('snip')
+  setTimeout(() => sc.classList.remove('snip'), 200)
+})
+
+/* ── REVEAL ── */
+const obs = new IntersectionObserver(entries => {
+  entries.forEach((en, i) => {
+    if (en.isIntersecting) setTimeout(() => en.target.classList.add('v'), i * 80)
+  })
+}, { threshold: .1 })
+document.querySelectorAll('.rev,.rev2').forEach(el => obs.observe(el))
+
+/* ── GO BOOK ── */
+function goBook() {
+  document.getElementById('booking').scrollIntoView({ behavior: 'smooth' })
+}
+
+/* ── MIN DATE ── */
+document.getElementById('dt').min = new Date().toISOString().split('T')[0]
+
+/* ── LOAD SERVICES ── */
+async function loadServices() {
+  const container = document.getElementById('svcPills')
+  try {
+    const res  = await fetch(`${API}/booking/${ORG}/services`)
+    const data = await res.json()
+
+    // Group by category
+    const cats = {}
+    for (const svc of data) {
+      const cat = svc.category?.name || 'Autres'
+      if (!cats[cat]) cats[cat] = []
+      cats[cat].push(svc)
+    }
+
+    let html = ''
+    for (const [cat, svcs] of Object.entries(cats)) {
+      html += `<div class="svc-cat-label">${cat}</div>`
+      for (const svc of svcs) {
+        const label = svc.price ? `${svc.name} — ${svc.price} MAD` : svc.name
+        html += `<div class="sp" data-id="${svc.id}" data-name="${svc.name}" data-price="${svc.price || ''}" onclick="pickSvc(this)">${svc.name}</div>`
+      }
+    }
+    container.innerHTML = html || '<div class="sp-loading">Aucun service disponible</div>'
+  } catch(e) {
+    container.innerHTML = '<div class="sp-loading" style="color:#c0392b">Erreur de chargement</div>'
+  }
+}
+
+/* ── LOAD STAFF ── */
+async function loadStaff() {
+  const sel = document.getElementById('sp')
+  try {
+    const res  = await fetch(`${API}/booking/${ORG}/staff`)
+    const data = await res.json()
+    sel.innerHTML = '<option value="">Sans préférence</option>'
+    for (const s of data) {
+      const opt = document.createElement('option')
+      opt.value = s.id
+      opt.textContent = s.name
+      sel.appendChild(opt)
+    }
+  } catch(e) {
+    // keep default option
+  }
+}
+
+/* ── PICK SERVICE ── */
+function pickSvc(el) {
+  document.querySelectorAll('.sp').forEach(s => s.classList.remove('sel'))
+  el.classList.add('sel')
+  selectedSvcId    = el.dataset.id
+  selectedSvcName  = el.dataset.name
+  selectedSvcPrice = el.dataset.price
+  const label = selectedSvcPrice ? `${selectedSvcName} — ${selectedSvcPrice} MAD` : selectedSvcName
+  document.getElementById('svcInp').value = label
+  loadSlots()
+}
+
+/* ── PICK SLOT ── */
+function pickSlot(el) {
+  if (el.classList.contains('off')) return
+  document.querySelectorAll('#slots .slot').forEach(s => s.classList.remove('on'))
+  el.classList.add('on')
+}
+
+/* ── LOAD SLOTS ── */
+async function loadSlots() {
+  const date    = document.getElementById('dt').value
+  const staffId = document.getElementById('sp').value
+  const slotsEl = document.getElementById('slots')
+
+  if (!date) return
+
+  slotsEl.innerHTML = '<div class="slot off" style="grid-column:1/-1;text-align:center;font-size:.6rem;letter-spacing:.12em;">Chargement…</div>'
+
+  try {
+    let url = `${API}/booking/${ORG}/slots?date=${date}`
+    if (selectedSvcId) url += `&serviceId=${selectedSvcId}`
+    if (staffId)       url += `&staffId=${staffId}`
+
+    const res  = await fetch(url)
+    const data = await res.json()
+
+    if (data.closed) {
+      slotsEl.innerHTML = '<div class="slot off" style="grid-column:1/-1;text-align:center;font-size:.6rem;letter-spacing:.12em;">Salon fermé ce jour</div>'
+      return
+    }
+
+    const slots = data.slots || []
+    if (!slots.length) {
+      slotsEl.innerHTML = '<div class="slot off" style="grid-column:1/-1;text-align:center;font-size:.6rem;letter-spacing:.12em;">Aucun créneau disponible</div>'
+      return
+    }
+
+    slotsEl.innerHTML = slots.map(s =>
+      `<div class="slot" onclick="pickSlot(this)">${s}</div>`
+    ).join('')
+  } catch(e) {
+    slotsEl.innerHTML = '<div class="slot off" style="grid-column:1/-1;text-align:center;font-size:.6rem;color:#c0392b">Erreur de chargement</div>'
+  }
+}
+
+/* ── SUBMIT ── */
+async function submit() {
+  const fn   = document.getElementById('fn').value.trim()
+  const ln   = document.getElementById('ln').value.trim()
+  const ph   = document.getElementById('ph').value.trim()
+  const date = document.getElementById('dt').value
+  const staffId = document.getElementById('sp').value
+  const slot = document.querySelector('#slots .slot.on')
+
+  const checks = [
+    { el: document.getElementById('fn'),     ok: !!fn },
+    { el: document.getElementById('ph'),     ok: !!ph },
+    { el: document.getElementById('svcInp'), ok: !!selectedSvcId },
+    { el: document.getElementById('dt'),     ok: !!date },
+  ]
+  checks.forEach(c => c.el.style.borderBottomColor = c.ok ? '' : '#c0392b')
+
+  if (!fn || !ph || !selectedSvcId || !date || !slot) {
+    const btn = document.querySelector('.sub-btn')
+    btn.style.animation = 'shake .4s ease'
+    setTimeout(() => btn.style.animation = '', 400)
+    return
+  }
+
+  const btn = document.querySelector('.sub-btn')
+  btn.style.opacity = '.6'
+  btn.style.pointerEvents = 'none'
+
+  const payload = {
+    name: fn,
+    last_name: ln,
+    phone: ph,
+    date,
+    time: slot.textContent.trim(),
+    serviceId: selectedSvcId,
+    staffId: staffId || null
+  }
+  console.log('[RDV] payload →', payload)
+
+  try {
+    const res = await fetch(`${API}/booking/${ORG}/appointments`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    })
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}))
+      console.error('[RDV] erreur backend →', err)
+      throw new Error(err.error || `Erreur ${res.status}`)
+    }
+
+    const t = document.getElementById('toast')
+    t.classList.add('show')
+    setTimeout(() => t.classList.remove('show'), 5000)
+
+    // Reset
+    setTimeout(() => {
+      ['fn','ln','ph','dt'].forEach(id => document.getElementById(id).value = '')
+      document.getElementById('svcInp').value = ''
+      document.getElementById('sp').value = ''
+      document.getElementById('slots').innerHTML = '<div class="slot off" style="grid-column:1/-1;text-align:center;font-size:.6rem;letter-spacing:.14em;">Sélectionnez une date</div>'
+      document.querySelectorAll('.sp').forEach(s => s.classList.remove('sel'))
+      checks.forEach(c => c.el.style.borderBottomColor = '')
+      selectedSvcId = selectedSvcName = selectedSvcPrice = null
+    }, 600)
+  } catch(e) {
+    console.error('[RDV] exception →', e.message)
+    const t = document.getElementById('toast')
+    t.style.background = '#c0392b'
+    t.textContent = '✗  ' + (e.message || 'Une erreur est survenue. Réessayez.')
+    t.classList.add('show')
+    setTimeout(() => { t.classList.remove('show'); t.style.background = ''; t.innerHTML = '✂ &nbsp; RDV confirmé ! On vous contacte sur WhatsApp.' }, 5000)
+  } finally {
+    btn.style.opacity = ''
+    btn.style.pointerEvents = ''
+  }
+}
+
+/* ── SHAKE ANIMATION ── */
+const st = document.createElement('style')
+st.textContent = `
+  @keyframes shake{0%,100%{transform:translateX(0)}25%,75%{transform:translateX(-5px)}50%{transform:translateX(5px)}}
+  .sp-loading{font-size:.6rem;letter-spacing:.18em;color:rgba(242,237,228,.3);text-transform:uppercase;padding:8px 0;}
+  .svc-cat-label{width:100%;font-size:.44rem;letter-spacing:.32em;text-transform:uppercase;color:var(--gold);margin-top:12px;margin-bottom:4px;padding-bottom:6px;border-bottom:1px solid rgba(196,149,58,.15);}
+  .svc-cat-label:first-child{margin-top:0;}
+`
+document.head.appendChild(st)
+
+/* ── INIT ── */
+loadServices()
+loadStaff()
+</script>
+</body>
+</html>

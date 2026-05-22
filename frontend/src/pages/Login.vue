@@ -1,110 +1,80 @@
 <template>
   <div class="login-page">
-    <!-- Left panel -->
-    <div class="login-panel-left">
-      <div class="login-brand">
-        <div class="login-brand-icon">
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-            <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
-          </svg>
-        </div>
-        <div>
-          <div class="login-brand-name">Glambook</div>
-          <div class="login-brand-tagline">Réservez dans les meilleurs salons</div>
-        </div>
-      </div>
 
-      <div class="login-hero">
-        <h1>Bienvenue<br/>sur votre espace</h1>
-        <p>Gérez vos rendez-vous, votre équipe et vos clients depuis une seule plateforme.</p>
-      </div>
+    <!-- LEFT — Avantages -->
+    <div class="left-panel">
+      <div class="left-inner">
 
-      <div class="login-features">
-        <div class="login-feature">
-          <div class="login-feature-dot"></div>
-          <span>Suivi des rendez-vous en temps réel</span>
+        <div class="brand">
+          <div class="brand-dot"></div>
+          <span class="brand-name">Glambook</span>
+          <span class="brand-tag">Pro</span>
         </div>
-        <div class="login-feature">
-          <div class="login-feature-dot"></div>
-          <span>Gestion des collaborateurs et absences</span>
+
+        <h1>Gérez votre salon<br/>comme un pro.</h1>
+        <p class="tagline">La plateforme tout-en-un pour les salons de coiffure et de beauté au Maroc.</p>
+
+        <ul class="features">
+          <li v-for="f in features" :key="f.title" class="feature">
+            <div class="feature-icon">
+              <component :is="'svg'" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" v-html="f.icon"></component>
+            </div>
+            <div class="feature-text">
+              <span class="feature-title">{{ f.title }}</span>
+              <span class="feature-desc">{{ f.desc }}</span>
+            </div>
+          </li>
+        </ul>
+
+        <div class="left-footer">
+          Glambook © 2026 · Maroc
         </div>
-        <div class="login-feature">
-          <div class="login-feature-dot"></div>
-          <span>File d'attente et walk-ins simplifiés</span>
-        </div>
+
       </div>
     </div>
 
-    <!-- Right panel — Form -->
-    <div class="login-panel-right">
-      <div class="login-form-card">
-        <div class="login-form-header">
-          <h2>Connexion</h2>
-          <p>Accédez à votre tableau de bord</p>
+    <!-- RIGHT — Connexion -->
+    <div class="right-panel">
+      <div class="login-card">
+
+        <div class="card-header">
+          <div class="card-dot"></div>
+          <span class="card-title">Espace salon</span>
         </div>
 
-        <form @submit.prevent="handleLogin" class="login-form">
-          <div class="login-field">
-            <label for="email">Adresse email</label>
-            <input
-              id="email"
-              v-model="email"
-              type="email"
-              placeholder="votre@email.com"
-              required
-              autocomplete="email"
-            />
-          </div>
+        <h2>Connexion</h2>
+        <p class="sub">Accédez à votre tableau de bord.</p>
 
-          <div class="login-field">
-            <label for="password">Mot de passe</label>
-            <input
-              id="password"
-              v-model="password"
-              type="password"
-              placeholder="••••••••"
-              required
-              autocomplete="current-password"
-            />
+        <form @submit.prevent="handleLogin" class="form">
+          <div class="field">
+            <label>Email</label>
+            <input v-model="email" type="email" placeholder="votre@salon.ma" required autocomplete="email" />
           </div>
-
-          <div v-if="error" class="login-error">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
-            </svg>
-            {{ error }}
+          <div class="field">
+            <label>Mot de passe</label>
+            <input v-model="password" type="password" placeholder="••••••••" required autocomplete="current-password" />
           </div>
-
-          <button type="submit" class="login-btn" :disabled="loading">
-            <span v-if="loading">Connexion en cours…</span>
-            <span v-else>Se connecter</span>
+          <div v-if="error" class="error-box">{{ error }}</div>
+          <button type="submit" class="btn-submit" :disabled="loading">
+            <span v-if="loading">Connexion…</span>
+            <span v-else>Se connecter →</span>
           </button>
         </form>
 
-        <!-- Séparateur -->
-        <div class="login-divider">
-          <span>ou</span>
+        <div class="access-link">
+          Pas encore de compte ?
+          <a href="mailto:med.benmansour@icloud.com?subject=Demande accès Glambook Pro">Demander un accès</a>
         </div>
 
-        <!-- Bouton prise de RDV -->
-        <router-link to="/booking" class="booking-btn">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-          Prendre un rendez-vous en ligne
-        </router-link>
+        <div class="admin-trigger" @click="showAdminHint = !showAdminHint">
+          <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          Admin
+        </div>
+        <div v-if="showAdminHint" class="admin-hint">Accès réservé à l'administrateur Glambook</div>
 
-        <div class="login-footer-row">
-          <p class="login-footer-note">© 2026 Glambook</p>
-          <span class="admin-hint" @click="showAdminHint = !showAdminHint">
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-            Admin
-          </span>
-        </div>
-        <div v-if="showAdminHint" class="admin-hint-box">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-          Accès réservé à l'administrateur de la plateforme Glambook
-        </div>
       </div>
     </div>
+
   </div>
 </template>
 
@@ -119,6 +89,34 @@ const password = ref('')
 const loading = ref(false)
 const error = ref('')
 const showAdminHint = ref(false)
+
+const features = [
+  {
+    title: 'Planning en temps réel',
+    desc: 'Visualisez toute votre équipe et vos rendez-vous sur un seul écran.',
+    icon: '<rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>'
+  },
+  {
+    title: 'File d\'attente intelligente',
+    desc: 'Gérez les sans-RDV et affectez vos collaborateurs en un clic.',
+    icon: '<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>'
+  },
+  {
+    title: 'Réservation en ligne',
+    desc: 'Vos clients réservent 24h/24 depuis leur téléphone, sans application.',
+    icon: '<path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/><path d="M12 6v6l4 2"/>'
+  },
+  {
+    title: 'Rappels WhatsApp automatiques',
+    desc: 'Réduisez les no-shows grâce aux confirmations automatiques.',
+    icon: '<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>'
+  },
+  {
+    title: 'Statistiques & caisse',
+    desc: 'Suivez vos revenus, vos prestations et vos performances en temps réel.',
+    icon: '<line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>'
+  },
+]
 
 async function handleLogin() {
   loading.value = true
@@ -135,283 +133,310 @@ async function handleLogin() {
 </script>
 
 <style scoped>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
 .login-page {
   display: flex;
   min-height: 100vh;
-  background: #F1F5F9;
+  font-family: 'Sora', system-ui, sans-serif;
 }
 
-/* ---- Left panel ---- */
-.login-panel-left {
+/* ── LEFT PANEL ── */
+.left-panel {
   flex: 1;
-  background: #0F172A;
-  padding: 48px 56px;
+  background: linear-gradient(150deg, #1C1A10 0%, #2C2510 45%, #A8810A 100%);
   display: flex;
-  flex-direction: column;
-  gap: 0;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 56px;
   position: relative;
   overflow: hidden;
 }
 
-.login-panel-left::before {
+.left-panel::before {
   content: '';
-  position: absolute;
-  top: -120px;
-  right: -120px;
-  width: 400px;
-  height: 400px;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(8,145,178,0.15) 0%, transparent 70%);
+  position: absolute; inset: 0;
+  background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
   pointer-events: none;
 }
 
-.login-brand {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  margin-bottom: auto;
-}
-
-.login-brand-icon {
-  width: 48px;
-  height: 48px;
-  background: rgba(8,145,178,0.2);
-  border: 1px solid rgba(8,145,178,0.3);
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #38BDF8;
-}
-
-.login-brand-name {
-  font-size: 18px;
-  font-weight: 800;
-  color: #F1F5F9;
-  letter-spacing: -0.02em;
-}
-
-.login-brand-tagline {
-  font-size: 12px;
-  color: #475569;
-  margin-top: 2px;
-}
-
-.login-hero {
-  margin-top: 80px;
-  margin-bottom: 40px;
-}
-
-.login-hero h1 {
-  font-size: 38px;
-  font-weight: 800;
-  color: #F8FAFC;
-  line-height: 1.15;
-  letter-spacing: -0.03em;
-  margin-bottom: 16px;
-}
-
-.login-hero p {
-  font-size: 15px;
-  color: #64748B;
-  line-height: 1.6;
-  max-width: 340px;
-}
-
-.login-features {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  margin-bottom: 48px;
-}
-
-.login-feature {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 13.5px;
-  color: #94A3B8;
-}
-
-.login-feature-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: #0891B2;
-  flex-shrink: 0;
-}
-
-/* ---- Right panel ---- */
-.login-panel-right {
-  width: 480px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 48px 40px;
-}
-
-.login-form-card {
+.left-inner {
+  position: relative;
+  max-width: 440px;
   width: 100%;
-  max-width: 380px;
-}
-
-.login-form-header {
-  margin-bottom: 32px;
-}
-
-.login-form-header h2 {
-  font-size: 26px;
-  font-weight: 800;
-  color: #0F172A;
-  letter-spacing: -0.02em;
-  margin-bottom: 6px;
-}
-
-.login-form-header p {
-  font-size: 14px;
-  color: #64748B;
-}
-
-.login-form {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  height: 100%;
+  min-height: 500px;
 }
 
-.login-field {
-  display: flex;
-  flex-direction: column;
-  gap: 7px;
-}
-
-.login-field label {
-  font-size: 12px;
-  font-weight: 700;
-  color: #475569;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.login-field input {
-  background: #fff;
-  border: 1.5px solid #E2E8F0;
-  border-radius: 10px;
-  padding: 11px 14px;
-  font-size: 14.5px;
-  color: #0F172A;
-  transition: all 0.15s;
-  width: 100%;
-  font-family: inherit;
-}
-
-.login-field input:focus {
-  outline: none;
-  border-color: #0891B2;
-  box-shadow: 0 0 0 3px rgba(8,145,178,0.12);
-}
-
-.login-error {
+/* Brand */
+.brand {
   display: flex;
   align-items: center;
   gap: 8px;
-  background: #FEF2F2;
-  border: 1px solid #FECACA;
-  color: #DC2626;
-  border-radius: 8px;
+  margin-bottom: 48px;
+}
+
+.brand-dot {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  background: #D4AF37;
+  box-shadow: 0 0 0 3px rgba(212,175,55,.3);
+}
+
+.brand-name {
+  font-size: 20px;
+  font-weight: 900;
+  color: #fff;
+  letter-spacing: -0.03em;
+}
+
+.brand-tag {
+  font-size: 10px;
+  font-weight: 800;
+  color: #D4AF37;
+  background: rgba(212,175,55,.15);
+  border: 1px solid rgba(212,175,55,.3);
+  border-radius: 6px;
+  padding: 2px 7px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+h1 {
+  font-size: clamp(28px, 3vw, 42px);
+  font-weight: 900;
+  color: #fff;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+  margin-bottom: 16px;
+}
+
+.tagline {
+  font-size: 15px;
+  color: rgba(255,255,255,.6);
+  line-height: 1.6;
+  margin-bottom: 48px;
+}
+
+/* Features */
+.features {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  flex: 1;
+}
+
+.feature {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.feature-icon {
+  width: 38px; height: 38px;
+  border-radius: 10px;
+  background: rgba(255,255,255,.08);
+  border: 1px solid rgba(255,255,255,.12);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  color: #D4AF37;
+}
+
+.feature-text {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding-top: 2px;
+}
+
+.feature-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: rgba(255,255,255,.95);
+}
+
+.feature-desc {
+  font-size: 12.5px;
+  color: rgba(255,255,255,.5);
+  line-height: 1.5;
+}
+
+.left-footer {
+  margin-top: 48px;
+  font-size: 12px;
+  color: rgba(255,255,255,.25);
+}
+
+/* ── RIGHT PANEL ── */
+.right-panel {
+  width: 440px;
+  flex-shrink: 0;
+  background: var(--bg-main);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 48px;
+}
+
+.login-card {
+  width: 100%;
+  max-width: 360px;
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 28px;
+}
+
+.card-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-mid);
+}
+
+.card-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+h2 {
+  font-size: 28px;
+  font-weight: 900;
+  color: var(--text-main);
+  letter-spacing: -0.03em;
+  margin-bottom: 6px;
+}
+
+.sub {
+  font-size: 13.5px;
+  color: var(--text-muted);
+  margin-bottom: 32px;
+}
+
+/* Form */
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.field label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+}
+
+.field input {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 11px;
+  padding: 12px 14px;
+  font-size: 14.5px;
+  color: var(--text-main);
+  font-family: inherit;
+  transition: border-color .15s, box-shadow .15s;
+}
+
+.field input:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-glow);
+}
+
+.error-box {
+  background: var(--red-soft);
+  border: 1px solid var(--red);
+  color: var(--red);
+  border-radius: 9px;
   padding: 10px 14px;
   font-size: 13px;
   font-weight: 500;
 }
 
-.login-btn {
-  background: #0891B2;
+.btn-submit {
+  background: var(--primary);
   color: #fff;
   border: none;
-  border-radius: 10px;
+  border-radius: 11px;
   padding: 13px;
   font-size: 15px;
   font-weight: 700;
   cursor: pointer;
-  transition: all 0.15s;
   font-family: inherit;
   margin-top: 4px;
+  transition: background .15s, opacity .15s;
+  letter-spacing: -0.01em;
 }
 
-.login-btn:hover:not(:disabled) {
-  background: #0E7490;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(8,145,178,0.3);
+.btn-submit:hover:not(:disabled) { background: #8A6A08; }
+.btn-submit:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.access-link {
+  margin-top: 24px;
+  font-size: 13px;
+  color: var(--text-muted);
+  text-align: center;
 }
 
-.login-btn:disabled {
-  opacity: 0.65;
-  cursor: not-allowed;
+.access-link a {
+  color: var(--primary);
+  font-weight: 600;
+  text-decoration: none;
+  margin-left: 4px;
 }
 
-.login-footer-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-top: 28px;
-}
+.access-link a:hover { text-decoration: underline; }
 
-.login-footer-note {
-  font-size: 12px;
-  color: #94A3B8;
-}
-
-.admin-hint {
+.admin-trigger {
   display: flex;
   align-items: center;
   gap: 4px;
-  font-size: 11px;
-  color: #cbd5e1;
+  font-size: 10.5px;
+  color: var(--border-strong);
   cursor: pointer;
+  margin-top: 24px;
+  justify-content: flex-end;
   user-select: none;
   transition: color .15s;
 }
-.admin-hint:hover { color: #94a3b8; }
 
-.admin-hint-box {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin-top: 8px;
+.admin-trigger:hover { color: var(--text-muted); }
+
+.admin-hint {
+  margin-top: 6px;
   padding: 8px 12px;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
+  background: var(--bg-soft);
+  border: 1px solid var(--border);
   border-radius: 8px;
   font-size: 11.5px;
-  color: #64748b;
+  color: var(--text-muted);
   font-weight: 500;
-}
-
-/* Divider */
-.login-divider {
-  display: flex; align-items: center; gap: 12px;
-  margin: 20px 0 16px;
-  color: #cbd5e1; font-size: 12px;
-}
-.login-divider::before, .login-divider::after {
-  content: ''; flex: 1; height: 1px; background: #e2e8f0;
-}
-
-/* Booking button */
-.booking-btn {
-  display: flex; align-items: center; justify-content: center; gap: 8px;
-  width: 100%; padding: 11px 16px;
-  background: #f8fafc; border: 1.5px solid #e2e8f0;
-  border-radius: 10px; text-decoration: none;
-  font-size: 14px; font-weight: 600; color: #475569;
-  transition: border-color .15s, color .15s, background .15s;
-}
-.booking-btn:hover {
-  border-color: #6366f1; color: #6366f1; background: #f5f3ff;
+  text-align: right;
 }
 
 /* Responsive */
-@media (max-width: 900px) {
-  .login-panel-left { display: none; }
-  .login-panel-right { width: 100%; padding: 40px 24px; }
+@media (max-width: 860px) {
+  .login-page { flex-direction: column; }
+  .left-panel { padding: 48px 32px 40px; }
+  .right-panel { width: 100%; padding: 40px 32px; }
+  h1 { font-size: 28px; }
+  .features { gap: 16px; }
 }
 </style>

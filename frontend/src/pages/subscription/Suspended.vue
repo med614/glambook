@@ -133,7 +133,7 @@ const hasContact = () => settings.value.whatsapp_number || settings.value.contac
 <style scoped>
 .suspended-layout {
   min-height: 100vh;
-  background: #f1f5f9;
+  background: var(--bg-soft);
   display: flex;
   flex-direction: column;
 }
@@ -145,35 +145,35 @@ const hasContact = () => settings.value.whatsapp_number || settings.value.contac
   justify-content: space-between;
   padding: 0 32px;
   height: 64px;
-  background: #0f172a;
-  border-bottom: 1px solid #1e293b;
+  background: var(--text-main);
+  border-bottom: 1px solid var(--bg-soft);
   flex-shrink: 0;
 }
 
 .brand { display: flex; align-items: center; gap: 12px; }
 .brand-icon {
   width: 36px; height: 36px;
-  background: linear-gradient(135deg, #6366f1, #3b82f6);
+  background: linear-gradient(135deg, var(--primary), var(--primary-light));
   border-radius: 10px;
   display: flex; align-items: center; justify-content: center;
   color: #fff;
 }
 .brand-text { display: flex; flex-direction: column; }
 .brand-name { font-size: 15px; font-weight: 800; color: #fff; letter-spacing: -.3px; }
-.brand-tag  { font-size: 10px; font-weight: 600; color: #6366f1; text-transform: uppercase; letter-spacing: .08em; }
+.brand-tag  { font-size: 10px; font-weight: 600; color: var(--primary); text-transform: uppercase; letter-spacing: .08em; }
 
 .topbar-logout {
   display: flex; align-items: center; gap: 6px;
   padding: 7px 14px;
   background: transparent;
-  border: 1px solid #334155;
+  border: 1px solid var(--border-strong);
   border-radius: 8px;
-  color: #94a3b8;
+  color: var(--text-light);
   font-size: 12.5px; font-weight: 600;
   cursor: pointer;
   transition: all .15s;
 }
-.topbar-logout:hover { background: #1e293b; color: #fff; border-color: #475569; }
+.topbar-logout:hover { background: var(--primary-soft); color: #fff; border-color: var(--primary-mid); }
 
 /* Main */
 .suspended-main {
@@ -211,13 +211,13 @@ const hasContact = () => settings.value.whatsapp_number || settings.value.contac
 .suspended-title {
   font-size: 22px;
   font-weight: 800;
-  color: #0f172a;
+  color: var(--text-main);
   margin: 0;
 }
 
 .suspended-subtitle {
   font-size: 14px;
-  color: #64748b;
+  color: var(--text-muted);
   line-height: 1.6;
   margin: 0;
   max-width: 360px;
@@ -250,13 +250,13 @@ const hasContact = () => settings.value.whatsapp_number || settings.value.contac
 }
 
 .contact-btn.email {
-  background: linear-gradient(135deg, #6366f1, #3b82f6);
+  background: linear-gradient(135deg, var(--primary), var(--primary-light));
   color: #fff;
 }
 
 .no-contact {
   font-size: 13.5px;
-  color: #94a3b8;
+  color: var(--text-light);
   font-style: italic;
   margin: 0;
 }
@@ -264,7 +264,7 @@ const hasContact = () => settings.value.whatsapp_number || settings.value.contac
 .divider {
   width: 100%;
   height: 1px;
-  background: #f1f5f9;
+  background: var(--bg-soft);
   margin: 4px 0;
 }
 
@@ -272,14 +272,14 @@ const hasContact = () => settings.value.whatsapp_number || settings.value.contac
   display: flex; align-items: center; gap: 7px;
   padding: 9px 18px;
   background: transparent;
-  border: 1.5px solid #e2e8f0;
+  border: 1.5px solid var(--border-strong);
   border-radius: 9px;
-  color: #64748b;
+  color: var(--text-muted);
   font-size: 13px; font-weight: 600;
   cursor: pointer;
   transition: all .15s;
 }
-.logout-btn:hover { background: #f8fafc; color: #0f172a; border-color: #cbd5e1; }
+.logout-btn:hover { background: var(--bg-main); color: var(--text-main); border-color: var(--border-strong); }
 
 @media (max-width: 480px) {
   .suspended-topbar { padding: 0 16px; }

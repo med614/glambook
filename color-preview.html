@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Glambook — Today ✦</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;1,14..32,400&family=Sora:wght@600;700;800&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bg:#0D0B0A; --surface:#161210; --surface2:#1E1916;
+  --border:rgba(255,255,255,.07); --border2:rgba(255,255,255,.12);
+  --p:#E8845A; --p2:#F0A07C; --p-glow:rgba(232,132,90,.25);
+  --green:#22C55E; --green-s:rgba(34,197,94,.12);
+  --blue:#60A5FA; --blue-s:rgba(96,165,250,.12);
+  --red:#F87171; --red-s:rgba(248,113,113,.12);
+  --gold:#FBBF24; --gold-s:rgba(251,191,36,.12);
+  --text:#F5F0EC; --muted:#8A7F78; --light:#5A524C;
+  --sidebar:56px; --radius:14px;
+}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);display:flex;min-height:100vh;font-size:13px;overflow-x:hidden;}
+body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='.03'/%3E%3C/svg%3E");pointer-events:none;z-index:0;}
+.glow-orb{position:fixed;border-radius:50%;filter:blur(80px);pointer-events:none;z-index:0;}
+.glow-1{width:400px;height:400px;top:-100px;right:10%;background:radial-gradient(circle,rgba(232,132,90,.12) 0%,transparent 70%);}
+.glow-2{width:300px;height:300px;bottom:10%;left:5%;background:radial-gradient(circle,rgba(96,165,250,.08) 0%,transparent 70%);}
+
+/* SIDEBAR */
+.sidebar{width:var(--sidebar);min-height:100vh;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;align-items:center;padding:14px 0 12px;gap:2px;position:fixed;top:0;left:0;bottom:0;z-index:50;}
+.sb-logo{width:34px;height:34px;background:var(--p);border-radius:10px;display:flex;align-items:center;justify-content:center;margin-bottom:14px;box-shadow:0 0 20px var(--p-glow);}
+.sb-logo svg{width:16px;height:16px;color:#fff;}
+.sb-btn{width:36px;height:36px;border-radius:9px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--light);border:none;background:transparent;transition:all .15s;position:relative;}
+.sb-btn:hover{background:rgba(255,255,255,.06);color:var(--text);}
+.sb-btn.on{background:rgba(232,132,90,.15);color:var(--p);box-shadow:0 0 0 1px rgba(232,132,90,.2);}
+.sb-btn svg{width:16px;height:16px;}
+.sb-btn::after{content:attr(data-t);position:absolute;left:calc(100% + 10px);background:#1E1916;border:1px solid var(--border2);color:var(--text);font-size:11px;font-weight:600;padding:4px 10px;border-radius:8px;white-space:nowrap;pointer-events:none;opacity:0;transform:translateX(-6px);transition:opacity .15s,transform .15s;z-index:200;}
+.sb-btn:hover::after{opacity:1;transform:translateX(0);}
+.sb-sep{width:24px;height:1px;background:var(--border);margin:4px 0;}
+.sb-foot{margin-top:auto;display:flex;flex-direction:column;align-items:center;gap:6px;}
+.sb-avatar{width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,var(--p),var(--p2));display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;cursor:pointer;border:none;box-shadow:0 0 0 2px rgba(232,132,90,.25),0 0 12px var(--p-glow);}
+
+/* MAIN */
+.main{margin-left:var(--sidebar);flex:1;display:flex;flex-direction:column;position:relative;z-index:1;}
+
+/* TOPBAR */
+.topbar{background:rgba(22,18,16,.85);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:0 24px;height:60px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10;}
+.topbar-title{font-family:'Sora',sans-serif;font-size:20px;font-weight:700;color:var(--text);display:flex;align-items:center;gap:10px;}
+.topbar-pill{font-family:'Inter',sans-serif;font-size:12px;font-weight:700;background:rgba(232,132,90,.15);color:var(--p);border:1px solid rgba(232,132,90,.25);padding:3px 10px;border-radius:99px;box-shadow:0 0 10px var(--p-glow);}
+.topbar-date{font-size:11px;color:var(--muted);margin-top:1px;}
+.topbar-right{display:flex;align-items:center;gap:8px;}
+.btn{display:inline-flex;align-items:center;gap:6px;border:none;border-radius:9px;font-family:'Inter',sans-serif;font-weight:600;cursor:pointer;transition:all .15s;font-size:12px;}
+.btn-ghost{background:transparent;border:1px solid var(--border2);color:var(--muted);padding:7px 14px;}
+.btn-ghost:hover{border-color:rgba(232,132,90,.3);color:var(--p);background:rgba(232,132,90,.06);}
+.btn-primary{background:var(--p);color:#fff;padding:7px 16px;box-shadow:0 0 16px var(--p-glow),0 2px 8px rgba(0,0,0,.3);}
+.btn-primary:hover{background:var(--p2);box-shadow:0 0 24px var(--p-glow),0 4px 12px rgba(0,0,0,.4);}
+
+/* STATS */
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--border);border-bottom:1px solid var(--border);}
+.stat-cell{background:var(--surface);padding:16px 20px;display:flex;align-items:center;gap:14px;position:relative;overflow:hidden;transition:background .2s;cursor:default;}
+.stat-cell:hover{background:var(--surface2);}
+.stat-icon{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.stat-icon svg{width:18px;height:18px;}
+.ic-p{background:rgba(232,132,90,.12);color:var(--p);box-shadow:0 0 12px rgba(232,132,90,.15);}
+.ic-g{background:var(--green-s);color:var(--green);box-shadow:0 0 12px rgba(34,197,94,.1);}
+.ic-gold{background:var(--gold-s);color:var(--gold);box-shadow:0 0 12px rgba(251,191,36,.1);}
+.ic-b{background:var(--blue-s);color:var(--blue);box-shadow:0 0 12px rgba(96,165,250,.1);}
+.stat-val{font-family:'Sora',sans-serif;font-size:22px;font-weight:700;color:var(--text);line-height:1;}
+.stat-unit{font-size:12px;font-weight:500;color:var(--muted);}
+.stat-lbl{font-size:10.5px;color:var(--muted);margin-top:3px;}
+.stat-badge{font-size:10px;font-weight:700;padding:3px 8px;border-radius:99px;background:var(--green-s);color:var(--green);margin-left:auto;}
+.prog-wrap{background:rgba(255,255,255,.04);border-radius:99px;height:3px;flex:1;}
+.prog{height:100%;border-radius:99px;background:linear-gradient(90deg,var(--p),var(--p2));}
+@keyframes ping{0%{opacity:1;transform:scale(1);}100%{opacity:0;transform:scale(2.2);}}
+.live-ring{margin-left:auto;position:relative;width:8px;height:8px;}
+.live-ring span{display:block;width:8px;height:8px;border-radius:50%;background:var(--blue);}
+.live-ring span::before{content:'';position:absolute;inset:-3px;border-radius:50%;border:1.5px solid var(--blue);animation:ping 1.5s infinite;}
+
+/* CONTENT */
+.content{padding:20px 24px;display:grid;grid-template-columns:1fr 320px;gap:20px;flex:1;align-items:start;}
+
+/* SECTION HDR */
+.sec-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+.sec-title{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;display:flex;align-items:center;gap:7px;}
+.sec-count{background:rgba(232,132,90,.12);border:1px solid rgba(232,132,90,.2);color:var(--p);font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px;}
+
+/* VIEW TOGGLE */
+.view-toggle{display:flex;background:var(--surface2);border:1px solid var(--border2);border-radius:8px;padding:2px;gap:2px;}
+.vtbtn{display:flex;align-items:center;gap:5px;padding:4px 10px;border:none;border-radius:6px;font-family:'Inter',sans-serif;font-size:11px;font-weight:600;cursor:pointer;color:var(--muted);background:transparent;transition:all .15s;}
+.vtbtn:hover{color:var(--text);}
+.vtbtn.active{background:rgba(232,132,90,.15);color:var(--p);box-shadow:0 0 0 1px rgba(232,132,90,.2);}
+
+/* CHRONO VIEW */
+.appt-list{display:flex;flex-direction:column;gap:10px;}
+.appt-card{position:relative;border-radius:var(--radius);padding:1px;background-image:linear-gradient(var(--surface2),var(--surface2)),linear-gradient(calc(var(--r,4.2rad)),var(--accent-color,var(--border)) 0%,var(--surface2) 30%,transparent 70%);background-origin:border-box;background-clip:padding-box,border-box;cursor:default;transition:box-shadow .2s;}
+.appt-card:hover{box-shadow:0 4px 32px rgba(0,0,0,.4);}
+.appt-inner{background:var(--surface2);border-radius:calc(var(--radius) - 1px);padding:14px 16px;display:grid;grid-template-columns:56px 1fr auto;gap:12px;align-items:start;}
+.appt-time{display:flex;flex-direction:column;gap:2px;padding-top:1px;}
+.appt-t1{font-family:'Sora',sans-serif;font-size:14px;font-weight:700;color:var(--text);}
+.appt-t2{font-size:10.5px;color:var(--light);}
+.appt-dur{margin-top:8px;font-size:9.5px;font-weight:600;color:var(--muted);background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:6px;padding:2px 6px;text-align:center;}
+.appt-body{display:flex;flex-direction:column;gap:5px;}
+.appt-name{font-size:14px;font-weight:700;color:var(--text);}
+.appt-svc{font-size:11.5px;color:var(--muted);}
+.appt-tags{display:flex;align-items:center;gap:6px;margin-top:6px;flex-wrap:wrap;}
+.tag{display:inline-flex;align-items:center;gap:4px;font-size:10.5px;font-weight:600;padding:3px 9px;border-radius:99px;}
+.tag-p{background:rgba(232,132,90,.12);color:var(--p);border:1px solid rgba(232,132,90,.18);}
+.tag-g{background:var(--green-s);color:var(--green);border:1px solid rgba(34,197,94,.18);}
+.tag-b{background:var(--blue-s);color:var(--blue);border:1px solid rgba(96,165,250,.18);}
+.tag-muted{background:rgba(255,255,255,.04);color:var(--muted);border:1px solid var(--border);}
+.dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;}
+.appt-actions{display:flex;flex-direction:column;gap:6px;min-width:106px;}
+.abtn{display:flex;align-items:center;justify-content:center;gap:5px;border:none;border-radius:8px;font-family:'Inter',sans-serif;font-weight:600;font-size:11px;cursor:pointer;padding:7px 10px;width:100%;transition:all .15s;}
+.abtn-check{background:rgba(34,197,94,.15);color:var(--green);border:1px solid rgba(34,197,94,.25);}
+.abtn-check:hover{background:var(--green);color:#fff;box-shadow:0 0 16px rgba(34,197,94,.3);}
+.abtn-done{background:rgba(232,132,90,.15);color:var(--p);border:1px solid rgba(232,132,90,.25);}
+.abtn-done:hover{background:var(--p);color:#fff;box-shadow:0 0 16px var(--p-glow);}
+.abtn-done-active{background:var(--p);color:#fff;box-shadow:0 0 12px var(--p-glow);}
+.abtn-done-active:hover{background:var(--p2);}
+.abtn-absent{background:rgba(248,113,113,.1);color:var(--red);border:1px solid rgba(248,113,113,.2);font-size:10px;}
+.abtn-absent:hover{background:var(--red-s);}
+
+/* STAFF KANBAN VIEW */
+.kanban{display:none;gap:12px;overflow-x:auto;padding-bottom:4px;}
+.kanban-col{min-width:210px;max-width:220px;display:flex;flex-direction:column;gap:8px;flex-shrink:0;}
+.kanban-hdr{
+  background:var(--surface2);border:1px solid var(--border);border-radius:12px;
+  padding:10px 12px;display:flex;align-items:center;gap:10px;
+  position:sticky;top:0;
+}
+.kanban-av{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff;flex-shrink:0;}
+.kanban-name{font-size:13px;font-weight:700;color:var(--text);}
+.kanban-st{display:flex;align-items:center;gap:4px;font-size:10px;color:var(--muted);}
+.kanban-rdv-count{margin-left:auto;font-size:10px;font-weight:700;padding:2px 7px;border-radius:99px;background:var(--border2);color:var(--muted);}
+
+.k-card{
+  background:var(--surface2);border:1px solid var(--border);border-radius:11px;
+  padding:12px 13px;display:flex;flex-direction:column;gap:6px;
+  transition:border-color .15s,box-shadow .15s;cursor:default;
+  border-left:2px solid var(--card-accent,var(--border));
+}
+.k-card:hover{border-color:rgba(232,132,90,.25);box-shadow:0 4px 20px rgba(0,0,0,.3);}
+.k-time{font-size:10.5px;font-weight:600;color:var(--muted);display:flex;align-items:center;gap:5px;}
+.k-time-bar{flex:1;height:2px;border-radius:99px;background:var(--card-accent,var(--border));}
+.k-name{font-size:12.5px;font-weight:700;color:var(--text);}
+.k-svc{font-size:11px;color:var(--muted);margin-top:1px;}
+.k-footer{display:flex;align-items:center;gap:6px;margin-top:4px;}
+.k-dur{font-size:9.5px;font-weight:600;color:var(--light);background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:5px;padding:2px 6px;}
+.k-status{font-size:9.5px;font-weight:700;padding:2px 8px;border-radius:99px;margin-left:auto;}
+.k-btn{border:none;border-radius:6px;font-family:'Inter',sans-serif;font-weight:700;font-size:10px;cursor:pointer;padding:5px 10px;transition:all .15s;display:flex;align-items:center;gap:4px;}
+.k-btn-g{background:rgba(34,197,94,.15);color:var(--green);border:1px solid rgba(34,197,94,.2);}
+.k-btn-g:hover{background:var(--green);color:#fff;}
+.k-btn-p{background:var(--p);color:#fff;box-shadow:0 0 8px var(--p-glow);}
+.k-btn-p:hover{background:var(--p2);}
+.k-empty{border:1.5px dashed var(--border2);border-radius:11px;padding:20px;text-align:center;color:var(--light);font-size:11px;}
+
+/* RIGHT PANEL */
+.right{display:flex;flex-direction:column;gap:16px;}
+.staff-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.staff-card{background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:7px;position:relative;overflow:hidden;transition:border-color .2s,box-shadow .2s;cursor:default;}
+.staff-card:hover{border-color:rgba(232,132,90,.2);box-shadow:0 0 20px rgba(232,132,90,.06);}
+.staff-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;border-radius:12px 12px 0 0;background:var(--staff-color,var(--border));opacity:0;transition:opacity .2s;}
+.staff-card:hover::before{opacity:1;}
+.staff-av{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;flex-shrink:0;}
+.staff-name{font-size:12px;font-weight:700;color:var(--text);}
+.staff-st{display:flex;align-items:center;gap:4px;font-size:10px;color:var(--muted);}
+.st-on{width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 6px var(--green);flex-shrink:0;}
+.st-off{width:6px;height:6px;border-radius:50%;background:var(--light);flex-shrink:0;}
+.staff-bar-wrap{height:3px;border-radius:99px;background:rgba(255,255,255,.05);overflow:hidden;}
+.staff-bar{height:100%;border-radius:99px;transition:width .3s;}
+.queue-wrap{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;}
+.queue-hdr{background:rgba(232,132,90,.08);border-bottom:1px solid rgba(232,132,90,.15);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;}
+.queue-title{font-size:11px;font-weight:700;color:var(--p);text-transform:uppercase;letter-spacing:.06em;display:flex;align-items:center;gap:6px;}
+.queue-n{width:18px;height:18px;border-radius:50%;background:var(--p);color:#fff;font-size:9px;font-weight:800;display:flex;align-items:center;justify-content:center;box-shadow:0 0 8px var(--p-glow);}
+.btn-add{background:rgba(232,132,90,.15);border:1px solid rgba(232,132,90,.25);color:var(--p);border-radius:7px;font-size:11px;font-weight:700;padding:5px 12px;cursor:pointer;display:flex;align-items:center;gap:5px;transition:all .15s;}
+.btn-add:hover{background:var(--p);color:#fff;box-shadow:0 0 12px var(--p-glow);}
+.q-row{padding:11px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;transition:background .15s;cursor:default;}
+.q-row:last-child{border-bottom:none;}
+.q-row:hover{background:rgba(255,255,255,.02);}
+.q-num{width:22px;height:22px;border-radius:50%;background:rgba(232,132,90,.1);border:1px solid rgba(232,132,90,.2);color:var(--p);font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.q-av{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0;}
+.q-info{flex:1;min-width:0;}
+.q-name{font-size:12px;font-weight:700;color:var(--text);}
+.q-detail{font-size:10.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.btn-serve{background:rgba(232,132,90,.12);border:1px solid rgba(232,132,90,.2);color:var(--p);border-radius:7px;font-size:11px;font-weight:700;padding:5px 12px;cursor:pointer;white-space:nowrap;flex-shrink:0;transition:all .15s;}
+.btn-serve:hover{background:var(--p);color:#fff;box-shadow:0 0 12px var(--p-glow);}
+::-webkit-scrollbar{width:4px;height:4px;}::-webkit-scrollbar-track{background:transparent;}::-webkit-scrollbar-thumb{background:var(--border2);border-radius:99px;}
+</style>
+</head>
+<body>
+<div class="glow-orb glow-1"></div>
+<div class="glow-orb glow-2"></div>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sb-logo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></div>
+  <button class="sb-btn on" data-t="Aujourd'hui"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg></button>
+  <button class="sb-btn" data-t="Rendez-vous"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></button>
+  <button class="sb-btn" data-t="Clients"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></button>
+  <div class="sb-sep"></div>
+  <button class="sb-btn" data-t="Staff"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></button>
+  <button class="sb-btn" data-t="Catalogue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93l-1.41 1.41M5.34 18.66l-1.41 1.41M20 12h-2M6 12H4M19.07 19.07l-1.41-1.41M5.34 5.34L3.93 3.93M12 20v-2M12 6V4"/></svg></button>
+  <div class="sb-sep"></div>
+  <button class="sb-btn" data-t="Stats"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></button>
+  <div class="sb-foot">
+    <button class="sb-btn" data-t="Paramètres"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
+    <button class="sb-avatar">S</button>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<div class="main">
+
+  <!-- TOPBAR -->
+  <header class="topbar">
+    <div>
+      <div class="topbar-title">Aujourd'hui <span class="topbar-pill" id="clock">09:47</span></div>
+      <div class="topbar-date">lundi 18 mai 2026 · Salon X</div>
+    </div>
+    <div class="topbar-right">
+      <button class="btn btn-ghost"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Sans RDV</button>
+      <button class="btn btn-primary"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Agenda</button>
+    </div>
+  </header>
+
+  <!-- STATS -->
+  <div class="stats-row">
+    <div class="stat-cell">
+      <div class="stat-icon ic-p"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+      <div><div class="stat-val">11</div><div class="stat-lbl">Clients du jour</div></div>
+      <div class="stat-badge">↑ 3</div>
+    </div>
+    <div class="stat-cell">
+      <div class="stat-icon ic-g"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg></div>
+      <div><div class="stat-val">7</div><div class="stat-lbl">Terminés</div></div>
+      <div style="margin-left:auto;display:flex;flex-direction:column;align-items:flex-end;gap:4px;"><div style="font-size:10px;font-weight:700;color:var(--green);">64%</div><div class="prog-wrap" style="width:60px;"><div class="prog" style="width:64%;"></div></div></div>
+    </div>
+    <div class="stat-cell">
+      <div class="stat-icon ic-gold"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div>
+      <div><div class="stat-val">1 240 <span class="stat-unit">MAD</span></div><div class="stat-lbl">CA encaissé</div></div>
+      <div class="stat-badge" style="background:var(--gold-s);color:var(--gold);">↑ 18%</div>
+    </div>
+    <div class="stat-cell">
+      <div class="stat-icon ic-b"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+      <div><div class="stat-val">3</div><div class="stat-lbl">En attente</div></div>
+      <div class="live-ring"><span></span></div>
+    </div>
+  </div>
+
+  <!-- CONTENT -->
+  <div class="content">
+    <div id="left-panel">
+
+      <!-- SEC HDR with toggle -->
+      <div class="sec-hdr">
+        <div class="sec-title">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          Planning du jour
+          <span class="sec-count">11 RDV</span>
+        </div>
+        <div class="view-toggle">
+          <button class="vtbtn active" id="btn-chrono" onclick="setView('chrono')">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+            Chrono
+          </button>
+          <button class="vtbtn" id="btn-staff" onclick="setView('staff')">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+            Par staff
+          </button>
+        </div>
+      </div>
+
+      <!-- ── VUE CHRONO ── -->
+      <div class="appt-list" id="view-chrono">
+
+        <div class="appt-card" style="--accent-color:var(--green);" data-card>
+          <div class="appt-inner">
+            <div class="appt-time"><div class="appt-t1">09:00</div><div class="appt-t2">→ 10:30</div><div class="appt-dur">90 min</div></div>
+            <div class="appt-body">
+              <div class="appt-name">Fatima Zahra Idrissi</div>
+              <div class="appt-svc">Coiffure complète · Coloration racines</div>
+              <div class="appt-tags">
+                <span class="tag tag-p"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="7" r="4"/><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/></svg>Siham</span>
+                <span class="tag tag-g"><div class="dot" style="background:var(--green);box-shadow:0 0 5px var(--green);"></div>En cours</span>
+              </div>
+            </div>
+            <div class="appt-actions"><button class="abtn abtn-done-active"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>Terminer</button></div>
+          </div>
+        </div>
+
+        <div class="appt-card" style="--accent-color:var(--blue);" data-card>
+          <div class="appt-inner">
+            <div class="appt-time"><div class="appt-t1">10:00</div><div class="appt-t2">→ 11:00</div><div class="appt-dur">60 min</div></div>
+            <div class="appt-body">
+              <div class="appt-name">Nadia El Amrani</div>
+              <div class="appt-svc">Brushing · Soin kératine</div>
+              <div class="appt-tags">
+                <span class="tag tag-p"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="7" r="4"/><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/></svg>Karima</span>
+                <span class="tag tag-b"><div class="dot" style="background:var(--blue);box-shadow:0 0 5px var(--blue);"></div>Arrivée</span>
+              </div>
+            </div>
+            <div class="appt-actions"><button class="abtn abtn-check"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>Client arrivé</button></div>
+          </div>
+        </div>
+
+        <div class="appt-card" style="--accent-color:rgba(96,165,250,.4);" data-card>
+          <div class="appt-inner">
+            <div class="appt-time"><div class="appt-t1">10:30</div><div class="appt-t2">→ 11:00</div><div class="appt-dur">30 min</div></div>
+            <div class="appt-body">
+              <div class="appt-name">Imane Cherkaoui</div>
+              <div class="appt-svc">Manucure gel</div>
+              <div class="appt-tags">
+                <span class="tag tag-p"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="7" r="4"/><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/></svg>Houda</span>
+                <span class="tag tag-b"><div class="dot" style="background:var(--blue);box-shadow:0 0 5px var(--blue);"></div>Arrivée</span>
+              </div>
+            </div>
+            <div class="appt-actions"><button class="abtn abtn-check">Client arrivé</button></div>
+          </div>
+        </div>
+
+        <div class="appt-card" style="--accent-color:rgba(255,255,255,.1);" data-card>
+          <div class="appt-inner">
+            <div class="appt-time"><div class="appt-t1">11:30</div><div class="appt-t2">→ 12:15</div><div class="appt-dur">45 min</div></div>
+            <div class="appt-body">
+              <div class="appt-name">Yasmine Benali</div>
+              <div class="appt-svc">Épilation visage · Sourcils</div>
+              <div class="appt-tags">
+                <span class="tag tag-p"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="7" r="4"/><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/></svg>Houda</span>
+                <span class="tag tag-muted"><div class="dot" style="background:var(--light);"></div>Planifié</span>
+              </div>
+            </div>
+            <div class="appt-actions"><button class="abtn abtn-check">Client arrivé</button><button class="abtn abtn-absent">Absent</button></div>
+          </div>
+        </div>
+
+        <div class="appt-card" style="--accent-color:rgba(255,255,255,.1);" data-card>
+          <div class="appt-inner">
+            <div class="appt-time"><div class="appt-t1">14:00</div><div class="appt-t2">→ 15:30</div><div class="appt-dur">90 min</div></div>
+            <div class="appt-body">
+              <div class="appt-name">Samira Moukhliss</div>
+              <div class="appt-svc">Lissage brésilien</div>
+              <div class="appt-tags">
+                <span class="tag tag-p"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="7" r="4"/><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/></svg>Siham</span>
+                <span class="tag tag-muted"><div class="dot" style="background:var(--light);"></div>Planifié</span>
+              </div>
+            </div>
+            <div class="appt-actions"><button class="abtn abtn-check">Client arrivé</button><button class="abtn abtn-absent">Absent</button></div>
+          </div>
+        </div>
+
+      </div><!-- /view-chrono -->
+
+      <!-- ── VUE PAR STAFF (KANBAN) ── -->
+      <div class="kanban" id="view-staff">
+
+        <!-- SIHAM -->
+        <div class="kanban-col">
+          <div class="kanban-hdr" style="border-top:2px solid var(--p);">
+            <div class="kanban-av" style="background:linear-gradient(135deg,#E8845A,#F0A07C);">S</div>
+            <div>
+              <div class="kanban-name">Siham</div>
+              <div class="kanban-st"><div class="st-on"></div>En service</div>
+            </div>
+            <div class="kanban-rdv-count">3 RDV</div>
+          </div>
+          <div class="k-card" style="--card-accent:var(--green);">
+            <div class="k-time">09:00 — 10:30 <div class="k-time-bar"></div></div>
+            <div class="k-name">Fatima Zahra I.</div>
+            <div class="k-svc">Coiffure complète · Coloration</div>
+            <div class="k-footer">
+              <span class="k-dur">90 min</span>
+              <span class="k-status" style="background:var(--green-s);color:var(--green);">En cours</span>
+              <button class="k-btn k-btn-p"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>Terminer</button>
+            </div>
+          </div>
+          <div class="k-card" style="--card-accent:rgba(255,255,255,.15);">
+            <div class="k-time">14:00 — 15:30 <div class="k-time-bar"></div></div>
+            <div class="k-name">Samira Moukhliss</div>
+            <div class="k-svc">Lissage brésilien</div>
+            <div class="k-footer">
+              <span class="k-dur">90 min</span>
+              <span class="k-status" style="background:rgba(255,255,255,.05);color:var(--muted);">Planifié</span>
+              <button class="k-btn k-btn-g">Arrivée</button>
+            </div>
+          </div>
+          <div class="k-card" style="--card-accent:rgba(255,255,255,.15);">
+            <div class="k-time">16:00 — 17:00 <div class="k-time-bar"></div></div>
+            <div class="k-name">Khadija Rifai</div>
+            <div class="k-svc">Balayage</div>
+            <div class="k-footer">
+              <span class="k-dur">60 min</span>
+              <span class="k-status" style="background:rgba(255,255,255,.05);color:var(--muted);">Planifié</span>
+              <button class="k-btn k-btn-g">Arrivée</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- KARIMA -->
+        <div class="kanban-col">
+          <div class="kanban-hdr" style="border-top:2px solid var(--blue);">
+            <div class="kanban-av" style="background:linear-gradient(135deg,#3B82F6,#60A5FA);">K</div>
+            <div>
+              <div class="kanban-name">Karima</div>
+              <div class="kanban-st"><div class="st-on"></div>En service</div>
+            </div>
+            <div class="kanban-rdv-count">2 RDV</div>
+          </div>
+          <div class="k-card" style="--card-accent:var(--blue);">
+            <div class="k-time">10:00 — 11:00 <div class="k-time-bar" style="background:var(--blue);"></div></div>
+            <div class="k-name">Nadia El Amrani</div>
+            <div class="k-svc">Brushing · Soin kératine</div>
+            <div class="k-footer">
+              <span class="k-dur">60 min</span>
+              <span class="k-status" style="background:var(--blue-s);color:var(--blue);">Arrivée</span>
+              <button class="k-btn" style="background:var(--blue-s);color:var(--blue);border:1px solid rgba(96,165,250,.2);">Démarrer</button>
+            </div>
+          </div>
+          <div class="k-card" style="--card-accent:rgba(255,255,255,.15);">
+            <div class="k-time">15:00 — 16:00 <div class="k-time-bar"></div></div>
+            <div class="k-name">Soukaina Bensaïd</div>
+            <div class="k-svc">Coupe + Brushing</div>
+            <div class="k-footer">
+              <span class="k-dur">60 min</span>
+              <span class="k-status" style="background:rgba(255,255,255,.05);color:var(--muted);">Planifié</span>
+              <button class="k-btn k-btn-g">Arrivée</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- HOUDA -->
+        <div class="kanban-col">
+          <div class="kanban-hdr" style="border-top:2px solid #A78BFA;">
+            <div class="kanban-av" style="background:linear-gradient(135deg,#7C3AED,#A78BFA);">H</div>
+            <div>
+              <div class="kanban-name">Houda</div>
+              <div class="kanban-st"><div class="st-on"></div>Disponible</div>
+            </div>
+            <div class="kanban-rdv-count">2 RDV</div>
+          </div>
+          <div class="k-card" style="--card-accent:var(--blue);">
+            <div class="k-time">10:30 — 11:00 <div class="k-time-bar" style="background:#A78BFA;"></div></div>
+            <div class="k-name">Imane Cherkaoui</div>
+            <div class="k-svc">Manucure gel</div>
+            <div class="k-footer">
+              <span class="k-dur">30 min</span>
+              <span class="k-status" style="background:var(--blue-s);color:var(--blue);">Arrivée</span>
+              <button class="k-btn" style="background:rgba(167,139,250,.15);color:#A78BFA;border:1px solid rgba(167,139,250,.2);">Démarrer</button>
+            </div>
+          </div>
+          <div class="k-card" style="--card-accent:rgba(255,255,255,.15);">
+            <div class="k-time">11:30 — 12:15 <div class="k-time-bar"></div></div>
+            <div class="k-name">Yasmine Benali</div>
+            <div class="k-svc">Épilation visage · Sourcils</div>
+            <div class="k-footer">
+              <span class="k-dur">45 min</span>
+              <span class="k-status" style="background:rgba(255,255,255,.05);color:var(--muted);">Planifié</span>
+              <button class="k-btn k-btn-g">Arrivée</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- LOUBNA -->
+        <div class="kanban-col">
+          <div class="kanban-hdr" style="border-top:2px solid var(--light);opacity:.7;">
+            <div class="kanban-av" style="background:linear-gradient(135deg,#44403C,#78716C);">L</div>
+            <div>
+              <div class="kanban-name">Loubna</div>
+              <div class="kanban-st"><div class="st-off"></div>Pause</div>
+            </div>
+            <div class="kanban-rdv-count">0 RDV</div>
+          </div>
+          <div class="k-empty">Aucun RDV assigné</div>
+        </div>
+
+      </div><!-- /view-staff -->
+
+    </div><!-- /left-panel -->
+
+    <!-- RIGHT -->
+    <div class="right">
+      <div>
+        <div class="sec-hdr" style="margin-bottom:10px;">
+          <div class="sec-title"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M17 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Staff</div>
+        </div>
+        <div class="staff-grid">
+          <div class="staff-card" style="--staff-color:var(--p);">
+            <div class="staff-av" style="background:linear-gradient(135deg,#E8845A,#F0A07C);">S</div>
+            <div class="staff-name">Siham</div>
+            <div class="staff-st"><div class="st-on"></div>En service</div>
+            <div class="staff-bar-wrap"><div class="staff-bar" style="width:75%;background:var(--p);box-shadow:0 0 8px var(--p-glow);"></div></div>
+          </div>
+          <div class="staff-card" style="--staff-color:var(--blue);">
+            <div class="staff-av" style="background:linear-gradient(135deg,#3B82F6,#60A5FA);">K</div>
+            <div class="staff-name">Karima</div>
+            <div class="staff-st"><div class="st-on"></div>En service</div>
+            <div class="staff-bar-wrap"><div class="staff-bar" style="width:50%;background:var(--blue);box-shadow:0 0 8px rgba(96,165,250,.3);"></div></div>
+          </div>
+          <div class="staff-card" style="--staff-color:#A78BFA;">
+            <div class="staff-av" style="background:linear-gradient(135deg,#7C3AED,#A78BFA);">H</div>
+            <div class="staff-name">Houda</div>
+            <div class="staff-st"><div class="st-on"></div>Disponible</div>
+            <div class="staff-bar-wrap"><div class="staff-bar" style="width:20%;background:#A78BFA;"></div></div>
+          </div>
+          <div class="staff-card" style="--staff-color:var(--light);">
+            <div class="staff-av" style="background:linear-gradient(135deg,#44403C,#78716C);">L</div>
+            <div class="staff-name">Loubna</div>
+            <div class="staff-st"><div class="st-off"></div>Pause</div>
+            <div class="staff-bar-wrap"><div class="staff-bar" style="width:0%;background:var(--light);"></div></div>
+          </div>
+        </div>
+      </div>
+      <div class="queue-wrap">
+        <div class="queue-hdr">
+          <div class="queue-title"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>File d'attente<div class="queue-n">3</div></div>
+          <button class="btn-add"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Ajouter</button>
+        </div>
+        <div class="q-row">
+          <div class="q-num">1</div>
+          <div class="q-av" style="background:linear-gradient(135deg,#E8845A,#F0A07C);">H</div>
+          <div class="q-info"><div class="q-name">Houda B.</div><div class="q-detail">Épilation jambes · 09:32</div></div>
+          <button class="btn-serve">Servir</button>
+        </div>
+        <div class="q-row">
+          <div class="q-num">2</div>
+          <div class="q-av" style="background:linear-gradient(135deg,#16A34A,#4ADE80);">S</div>
+          <div class="q-info"><div class="q-name">Sanae K.</div><div class="q-detail">Manucure · 09:45</div></div>
+          <button class="btn-serve">Servir</button>
+        </div>
+        <div class="q-row">
+          <div class="q-num">3</div>
+          <div class="q-av" style="background:linear-gradient(135deg,#7C3AED,#A78BFA);">R</div>
+          <div class="q-info"><div class="q-name">Rania M.</div><div class="q-detail">Brushing · 10:02</div></div>
+          <button class="btn-serve">Servir</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function tick(){const n=new Date(),h=String(n.getHours()).padStart(2,'0'),m=String(n.getMinutes()).padStart(2,'0');document.getElementById('clock').textContent=h+':'+m;}
+tick();setInterval(tick,30000);
+
+// Bauhaus rotating glow
+document.querySelectorAll('[data-card]').forEach(card=>{
+  card.addEventListener('mousemove',e=>{
+    const r=card.getBoundingClientRect();
+    card.style.setProperty('--r',Math.atan2(-(e.clientX-r.left-r.width/2),e.clientY-r.top-r.height/2)+'rad');
+  });
+  card.addEventListener('mouseleave',()=>card.style.setProperty('--r','4.2rad'));
+});
+
+// View toggle
+function setView(v){
+  const chrono=document.getElementById('view-chrono');
+  const staff=document.getElementById('view-staff');
+  const btnC=document.getElementById('btn-chrono');
+  const btnS=document.getElementById('btn-staff');
+  if(v==='chrono'){
+    chrono.style.display='flex';staff.style.display='none';
+    btnC.classList.add('active');btnS.classList.remove('active');
+  } else {
+    chrono.style.display='none';staff.style.display='flex';
+    btnC.classList.remove('active');btnS.classList.add('active');
+  }
+}
+</script>
+</body>
+</html>

@@ -27,6 +27,8 @@ const noshowThreshold = ref(3)
 const cancelThreshold = ref(5)
 const whatsappEnabled = ref(true)
 const whatsappShowPrices = ref(true)
+const onlineEnabled = ref(true)
+const onlineShowPrices = ref(true)
 const closures        = ref([])
 const newDateStart    = ref('')
 const newDateEnd      = ref('')
@@ -42,6 +44,8 @@ onMounted(async () => {
     cancelThreshold.value = settings.cancel_threshold ?? 5
     whatsappEnabled.value = settings.whatsapp_enabled ?? true
     whatsappShowPrices.value = settings.whatsapp_show_prices ?? true
+    onlineEnabled.value = settings.online_enabled ?? true
+    onlineShowPrices.value = settings.online_show_prices ?? true
   }
   closures.value = cl
 })
@@ -54,6 +58,8 @@ async function save() {
     cancel_threshold: cancelThreshold.value,
     whatsapp_enabled: whatsappEnabled.value,
     whatsapp_show_prices: whatsappShowPrices.value,
+    online_enabled: onlineEnabled.value,
+    online_show_prices: onlineShowPrices.value,
   })
   saving.value = false
   savedMsg.value = true
@@ -208,13 +214,14 @@ function formatRange(c) {
       </div>
 
       <!-- WhatsApp -->
-      <div class="settings-card">
+      <div class="settings-card card-coming-soon">
         <div class="card-header">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="#25D366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
           <h2>Bot WhatsApp</h2>
+          <span class="badge-coming-soon">Bientôt disponible</span>
         </div>
 
-        <div class="wa-option" :class="{ 'wa-paused': !whatsappEnabled }">
+        <div class="wa-option">
           <div class="wa-option-text">
             <div class="wa-option-title">{{ whatsappEnabled ? '🟢 Bot actif' : '⏸️ Bot en pause' }}</div>
             <div class="wa-option-desc">{{ whatsappEnabled ? 'Les clients peuvent réserver via WhatsApp.' : 'Le bot ne répond plus aux messages WhatsApp.' }}</div>
@@ -225,14 +232,47 @@ function formatRange(c) {
           </label>
         </div>
 
-        <div class="wa-option">
+        <div class="wa-option" :class="{ 'option-disabled': !whatsappEnabled }">
           <div class="wa-option-text">
             <div class="wa-option-title">Afficher les prix</div>
             <div class="wa-option-desc">Affiche le prix des prestations dans les messages WhatsApp.</div>
           </div>
           <label class="toggle">
-            <input type="checkbox" v-model="whatsappShowPrices" />
+            <input type="checkbox" v-model="whatsappShowPrices" :disabled="!whatsappEnabled" />
             <span class="toggle-switch toggle-switch--green"></span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Réservation en ligne -->
+      <div class="settings-card" :class="{ 'card-disabled': !onlineEnabled }">
+        <div class="card-header">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+          <h2>Réservation en ligne</h2>
+          <span class="channel-badge" :class="onlineEnabled ? 'badge-active' : 'badge-paused'">
+            {{ onlineEnabled ? 'Active' : 'En pause' }}
+          </span>
+        </div>
+
+        <div class="wa-option">
+          <div class="wa-option-text">
+            <div class="wa-option-title">{{ onlineEnabled ? '🟢 Réservation active' : '⏸️ Réservation en pause' }}</div>
+            <div class="wa-option-desc">{{ onlineEnabled ? 'Les clients peuvent réserver via le site Glambook.' : 'Les clients ne peuvent plus réserver en ligne pour ce salon.' }}</div>
+          </div>
+          <label class="toggle">
+            <input type="checkbox" v-model="onlineEnabled" />
+            <span class="toggle-switch toggle-switch--blue"></span>
+          </label>
+        </div>
+
+        <div class="wa-option" :class="{ 'option-disabled': !onlineEnabled }">
+          <div class="wa-option-text">
+            <div class="wa-option-title">Afficher les prix</div>
+            <div class="wa-option-desc">Affiche le prix des prestations sur la page de réservation en ligne.</div>
+          </div>
+          <label class="toggle">
+            <input type="checkbox" v-model="onlineShowPrices" :disabled="!onlineEnabled" />
+            <span class="toggle-switch toggle-switch--blue"></span>
           </label>
         </div>
       </div>
@@ -295,7 +335,7 @@ function formatRange(c) {
 /* Toggle */
 .toggle { position: relative; display: inline-block; width: 36px; height: 20px; flex-shrink: 0; }
 .toggle input { display: none; }
-.toggle-switch { position: absolute; inset: 0; background: #cbd5e1; border-radius: 20px; cursor: pointer; transition: .2s; }
+.toggle-switch { position: absolute; inset: 0; background: var(--border-strong); border-radius: 20px; cursor: pointer; transition: .2s; }
 .toggle-switch::after { content: ''; position: absolute; width: 14px; height: 14px; left: 3px; top: 3px; background: #fff; border-radius: 50%; transition: .2s; }
 .toggle input:checked + .toggle-switch { background: var(--primary); }
 .toggle input:checked + .toggle-switch::after { transform: translateX(16px); }
@@ -312,7 +352,7 @@ function formatRange(c) {
 .closure-date { font-size: 13.5px; font-weight: 600; color: var(--text-main); }
 .closure-label { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
 .btn-remove { background: none; border: none; cursor: pointer; color: var(--text-muted); padding: 4px; border-radius: 4px; display: flex; align-items: center; }
-.btn-remove:hover { color: #ef4444; background: #fee2e2; }
+.btn-remove:hover { color: var(--red); background: var(--red-soft); }
 .empty-closures { font-size: 13px; color: var(--text-muted); text-align: center; padding: 16px 0; }
 
 /* Seuils */
@@ -324,6 +364,40 @@ function formatRange(c) {
 .btn-step:hover { background: var(--bg-teal-soft); }
 .threshold-val { font-size: 18px; font-weight: 700; color: var(--primary); min-width: 24px; text-align: center; }
 .threshold-unit { font-size: 13px; color: var(--text-muted); }
+
+/* Card grisée quand désactivée */
+.card-disabled { opacity: 0.6; }
+
+/* Coming soon */
+.card-coming-soon {
+  opacity: 0.5;
+  pointer-events: none;
+  user-select: none;
+  position: relative;
+}
+.badge-coming-soon {
+  margin-left: auto;
+  font-size: 11px; font-weight: 700; padding: 2px 10px;
+  border-radius: 100px;
+  background: var(--orange-soft); color: var(--orange);
+  border: 1px solid rgba(217,119,6,.25);
+}
+
+/* Badge statut canal */
+.channel-badge {
+  margin-left: auto;
+  font-size: 11px; font-weight: 700; padding: 2px 10px;
+  border-radius: 100px;
+}
+.badge-active { background: var(--green-soft); color: var(--green); }
+.badge-paused { background: var(--bg-soft); color: var(--text-muted); }
+
+/* Option grisée */
+.option-disabled { opacity: 0.4; pointer-events: none; }
+
+/* Toggle bleu (réservation en ligne) */
+.toggle-switch--blue { background: var(--border-strong); }
+.toggle input:checked + .toggle-switch--blue { background: var(--blue); }
 
 /* WhatsApp */
 .wa-option {
@@ -337,6 +411,6 @@ function formatRange(c) {
 .wa-option.wa-paused { opacity: 0.7; }
 .wa-option-title { font-size: 13.5px; font-weight: 600; color: var(--text-main); }
 .wa-option-desc { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
-.toggle-switch--green { background: #cbd5e1; }
-.toggle input:checked + .toggle-switch--green { background: #25D366; }
+.toggle-switch--green { background: var(--border-strong); }
+.toggle input:checked + .toggle-switch--green { background: var(--whatsapp); }
 </style>

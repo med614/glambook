@@ -173,7 +173,7 @@ async function save() {
 <style scoped>
 .overlay {
   position: fixed; inset: 0;
-  background: rgba(15, 23, 42, 0.6);
+  background: rgba(28,26,16,.6);
   backdrop-filter: blur(3px);
   display: flex; align-items: center; justify-content: center;
   z-index: 9999;
@@ -196,29 +196,29 @@ async function save() {
   align-items: flex-start;
   gap: 14px;
   padding: 24px 24px 20px;
-  border-bottom: 1px solid #f1f5f9;
+  border-bottom: 1px solid var(--bg-soft);
   position: relative;
 }
 .modal-head-icon {
   width: 42px; height: 42px;
-  background: linear-gradient(135deg, #e0e7ff, #dbeafe);
-  color: #3b82f6;
+  background: linear-gradient(135deg, var(--primary-soft), var(--primary-mid));
+  color: var(--primary-light);
   border-radius: 12px;
   display: flex; align-items: center; justify-content: center;
   flex-shrink: 0;
 }
-.modal-title { font-size: 17px; font-weight: 800; color: #0f172a; margin: 0; }
-.modal-sub   { font-size: 12.5px; color: #64748b; margin: 3px 0 0; }
+.modal-title { font-size: 17px; font-weight: 800; color: var(--text-main); margin: 0; }
+.modal-sub   { font-size: 12.5px; color: var(--text-muted); margin: 3px 0 0; }
 .modal-close {
   position: absolute; top: 20px; right: 20px;
   width: 30px; height: 30px;
-  border: none; background: #f1f5f9;
+  border: none; background: var(--bg-soft);
   border-radius: 50%; font-size: 20px;
-  color: #64748b; cursor: pointer;
+  color: var(--text-muted); cursor: pointer;
   display: flex; align-items: center; justify-content: center;
   transition: all .15s;
 }
-.modal-close:hover { background: #e2e8f0; color: #0f172a; }
+.modal-close:hover { background: var(--border-strong); color: var(--text-main); }
 
 .modal-body {
   padding: 22px 24px;
@@ -229,7 +229,7 @@ async function save() {
 
 .section-label {
   font-size: 11px; font-weight: 800; text-transform: uppercase;
-  letter-spacing: .08em; color: #94a3b8; margin: 0;
+  letter-spacing: .08em; color: var(--text-light); margin: 0;
 }
 
 .modal-error {
@@ -242,30 +242,30 @@ async function save() {
 .info-banner {
   display: flex; align-items: flex-start; gap: 8px;
   padding: 10px 14px;
-  background: #eff6ff; border: 1px solid #bfdbfe;
-  border-radius: 8px; font-size: 12.5px; color: #1d4ed8; font-weight: 500;
+  background: var(--primary-soft); border: 1px solid var(--primary-mid);
+  border-radius: 8px; font-size: 12.5px; color: var(--primary); font-weight: 500;
   line-height: 1.5;
 }
 
 .field { display: flex; flex-direction: column; gap: 6px; flex: 1; }
-.field label { font-size: 12.5px; font-weight: 700; color: #475569; }
+.field label { font-size: 12.5px; font-weight: 700; color: var(--text-muted); }
 .field input, .field select {
   padding: 9px 12px;
-  border: 1.5px solid #e2e8f0;
+  border: 1.5px solid var(--border-strong);
   border-radius: 9px;
   font-size: 13.5px;
-  color: #0f172a;
-  background: #f8fafc;
+  color: var(--text-main);
+  background: var(--bg-main);
   transition: border-color .15s;
 }
 .field input:focus, .field select:focus {
   outline: none;
-  border-color: #6366f1;
+  border-color: var(--primary);
   background: #fff;
-  box-shadow: 0 0 0 3px rgba(99,102,241,.1);
+  box-shadow: 0 0 0 3px var(--input-focus-ring);
 }
 .field input:disabled {
-  background: #f1f5f9; color: #94a3b8; cursor: not-allowed;
+  background: var(--bg-soft); color: var(--text-light); cursor: not-allowed;
 }
 
 .field-row { display: flex; gap: 14px; }
@@ -273,16 +273,16 @@ async function save() {
 .toggle-field {
   display: flex; align-items: center; justify-content: space-between;
   padding: 9px 12px;
-  border: 1.5px solid #e2e8f0;
+  border: 1.5px solid var(--border-strong);
   border-radius: 9px;
-  background: #f8fafc;
-  font-size: 13.5px; color: #0f172a; font-weight: 600;
+  background: var(--bg-main);
+  font-size: 13.5px; color: var(--text-main); font-weight: 600;
 }
 .toggle { position: relative; display: inline-block; width: 40px; height: 22px; flex-shrink: 0; }
 .toggle input { display: none; }
 .slider {
   position: absolute; inset: 0;
-  background: #cbd5e1; border-radius: 22px; cursor: pointer;
+  background: var(--border-strong); border-radius: 22px; cursor: pointer;
   transition: .25s;
 }
 .slider:before {
@@ -292,33 +292,33 @@ async function save() {
   transition: .25s;
   box-shadow: 0 1px 3px rgba(0,0,0,.2);
 }
-.toggle input:checked + .slider { background: #6366f1; }
+.toggle input:checked + .slider { background: var(--primary); }
 .toggle input:checked + .slider:before { transform: translateX(18px); }
 
 .modal-foot {
   display: flex; align-items: center; justify-content: flex-end;
   gap: 10px;
   padding: 16px 24px;
-  border-top: 1px solid #f1f5f9;
-  background: #f8fafc;
+  border-top: 1px solid var(--bg-soft);
+  background: var(--bg-main);
 }
 
 .btn-cancel {
   padding: 9px 18px;
-  border: 1.5px solid #e2e8f0; border-radius: 9px;
-  background: #fff; color: #64748b;
+  border: 1.5px solid var(--border-strong); border-radius: 9px;
+  background: #fff; color: var(--text-muted);
   font-size: 13.5px; font-weight: 600; cursor: pointer;
   transition: all .15s;
 }
-.btn-cancel:hover { background: #f1f5f9; color: #1e293b; }
+.btn-cancel:hover { background: var(--bg-soft); color: var(--text-main); }
 
 .btn-save {
   padding: 9px 22px;
   border: none; border-radius: 9px;
-  background: linear-gradient(135deg, #6366f1, #3b82f6);
+  background: linear-gradient(135deg, var(--primary), var(--primary-light));
   color: #fff; font-size: 13.5px; font-weight: 700;
   cursor: pointer;
-  box-shadow: 0 2px 8px rgba(99,102,241,.3);
+  box-shadow: 0 2px 8px var(--primary-glow);
   transition: opacity .15s;
 }
 .btn-save:hover:not(:disabled) { opacity: .9; }

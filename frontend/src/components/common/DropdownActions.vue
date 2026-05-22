@@ -169,11 +169,11 @@ onUnmounted(() => {
 }
 
 .menu-item.danger {
-  color: #ef4444;
+  color: var(--red);
 }
 
 .menu-item.danger:hover {
-  background: #fef2f2;
+  background: var(--red-soft);
 }
 
 .item-icon {

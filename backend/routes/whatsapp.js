@@ -8,7 +8,7 @@ const TWILIO_SID   = process.env.TWILIO_ACCOUNT_SID
 const TWILIO_TOKEN = process.env.TWILIO_AUTH_TOKEN
 const FROM         = process.env.TWILIO_WHATSAPP_FROM
 const SALON_PHONE  = process.env.SALON_PHONE
-const ORG_ID       = '77748ee2-0bba-429b-a696-f710ed523e7e'
+const ORG_ID       = process.env.WHATSAPP_ORG_ID
 
 const client_twilio = twilio(TWILIO_SID, TWILIO_TOKEN)
 

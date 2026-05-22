@@ -90,7 +90,6 @@ onMounted(async () => {
 
 <style>
 @import './assets/css/admin.css';
-@import './assets/lux-modal.css';
 
 .full-width {
   width: 100%;

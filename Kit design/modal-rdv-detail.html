@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Modal RDV Détail — Kit Glambook</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Sora:wght@600;700;800&display=swap" rel="stylesheet" />
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* ── Design tokens (thème ivoire / or) ── */
+:root {
+  --bg:       #F5F2EA;
+  --s1:       #FFFFFF;
+  --s2:       #EEE9DC;
+  --s3:       #E5DFD0;
+  --border:   rgba(160,130,40,.15);
+  --border2:  rgba(160,130,40,.3);
+  --p:        #A8810A;
+  --p2:       #C49B12;
+  --pglow:    rgba(168,129,10,.2);
+  --text:     #1C1A10;
+  --muted:    #7A6A2A;
+  --light:    #B8A060;
+  --green:    #15803D;
+  --green-s:  rgba(21,128,61,.1);
+  --blue:     #1D4ED8;
+  --blue-s:   rgba(29,78,216,.1);
+  --red:      #DC2626;
+  --red-s:    rgba(220,38,38,.1);
+  --gold-s:   rgba(168,129,10,.1);
+}
+
+body {
+  font-family: 'Inter', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  padding: 40px 20px;
+  font-size: 13px;
+}
+
+/* ── Badges (repris du design system) ── */
+.badge {
+  display: inline-flex; align-items: center;
+  padding: 3px 9px; border-radius: 20px;
+  font-size: 11px; font-weight: 700; white-space: nowrap;
+}
+.badge-blue    { background: var(--blue-s);  color: var(--blue); }
+.badge-green   { background: var(--green-s); color: var(--green); }
+.badge-red     { background: var(--red-s);   color: var(--red); }
+.badge-done    { background: rgba(0,0,0,.06); color: var(--muted); }
+.badge-walkin  { background: rgba(168,129,10,.1); color: var(--p); }
+
+/* ── Modal overlay ── */
+.modal-overlay {
+  position: fixed; inset: 0; z-index: 100;
+  background: rgba(20,16,8,.45);
+  backdrop-filter: blur(4px);
+  display: flex; align-items: center; justify-content: center;
+  padding: 20px;
+  opacity: 0; pointer-events: none;
+  transition: opacity .2s;
+}
+.modal-overlay.open { opacity: 1; pointer-events: all; }
+
+/* ── Modal card ── */
+.modal {
+  background: var(--s1);
+  border: 1px solid var(--border2);
+  border-radius: 20px;
+  box-shadow: 0 24px 64px rgba(0,0,0,.18), 0 4px 16px rgba(0,0,0,.08);
+  width: 440px; max-width: 100%;
+  max-height: 90vh;
+  display: flex; flex-direction: column;
+  transform: translateY(12px);
+  transition: transform .2s;
+}
+.modal-overlay.open .modal { transform: translateY(0); }
+
+/* Header */
+.modal-header {
+  display: flex; align-items: center; gap: 10px;
+  padding: 20px 24px 18px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.modal-header-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--p); box-shadow: 0 0 8px var(--pglow);
+  flex-shrink: 0; transition: background .2s;
+}
+.modal-title {
+  font-family: 'Sora', sans-serif;
+  font-size: 16px; font-weight: 700; color: var(--text);
+  flex: 1;
+}
+.modal-close {
+  width: 32px; height: 32px; border-radius: 9px;
+  background: transparent; border: 1px solid var(--border);
+  color: var(--muted); cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all .15s; flex-shrink: 0;
+}
+.modal-close:hover { background: rgba(0,0,0,.05); border-color: var(--border2); color: var(--text); }
+
+/* Hero client */
+.rdv-detail-hero {
+  display: flex; align-items: center; gap: 14px;
+  padding: 20px 24px; border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.rdv-detail-av {
+  width: 46px; height: 46px; border-radius: 50%;
+  background: var(--gold-s); border: 1.5px solid var(--border2);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 17px; font-weight: 800; color: var(--p); flex-shrink: 0;
+}
+.rdv-detail-name { font-size: 15px; font-weight: 800; color: var(--text); }
+.rdv-detail-meta { font-size: 11.5px; color: var(--muted); margin-top: 2px; }
+
+/* Corps — grille d'infos */
+.modal-body {
+  padding: 0 24px; overflow-y: auto; flex: 1;
+}
+.rdv-info-grid { display: flex; flex-direction: column; }
+.rdv-info-row {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  padding: 11px 0; border-bottom: 1px solid var(--border); gap: 16px;
+}
+.rdv-info-row:last-child { border-bottom: none; }
+.rdv-info-label { font-size: 11.5px; font-weight: 600; color: var(--muted); flex-shrink: 0; }
+.rdv-info-val   { font-size: 12.5px; font-weight: 600; color: var(--text); text-align: right; }
+
+/* Montant total */
+.rdv-amount-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 13px 24px; border-top: 1px solid var(--border);
+  background: var(--s2); flex-shrink: 0;
+}
+.rdv-amount-label { font-size: 12px; font-weight: 600; color: var(--muted); }
+.rdv-amount-val   { font-size: 17px; font-weight: 800; color: var(--p); }
+
+/* Footer actions */
+.modal-footer {
+  display: flex; align-items: center; justify-content: flex-end; gap: 8px;
+  padding: 16px 24px;
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+/* Boutons footer */
+.btn-modal-edit {
+  padding: 9px 18px; border-radius: 11px;
+  background: transparent; border: 1px solid var(--border2);
+  color: var(--text); font-family: 'Inter', sans-serif;
+  font-size: 13px; font-weight: 600; cursor: pointer;
+  transition: all .15s; margin-right: auto;
+}
+.btn-modal-edit:hover { background: var(--s2); }
+.btn-modal-cancel {
+  padding: 9px 18px; border-radius: 11px;
+  background: transparent; border: 1px solid var(--border2);
+  color: var(--muted); font-family: 'Inter', sans-serif;
+  font-size: 13px; font-weight: 600; cursor: pointer;
+  transition: all .15s;
+}
+.btn-modal-cancel:hover { background: rgba(0,0,0,.04); color: var(--text); }
+.btn-modal-noshow {
+  padding: 9px 18px; border-radius: 11px;
+  background: var(--red-s); border: 1px solid rgba(220,38,38,.2);
+  color: var(--red); font-family: 'Inter', sans-serif;
+  font-size: 13px; font-weight: 600; cursor: pointer;
+  transition: all .15s;
+}
+.btn-modal-noshow:hover { background: rgba(220,38,38,.18); }
+.btn-modal-confirm {
+  padding: 9px 22px; border-radius: 11px;
+  background: var(--p); color: #fff; border: none;
+  font-family: 'Inter', sans-serif;
+  font-size: 13px; font-weight: 700; cursor: pointer;
+  box-shadow: 0 0 18px var(--pglow);
+  transition: background .15s, transform .1s;
+}
+.btn-modal-confirm:hover { background: var(--p2); transform: translateY(-1px); }
+
+/* ── Page de démo ── */
+.demo-title {
+  font-family: 'Sora', sans-serif;
+  font-size: 13px; font-weight: 700; color: var(--muted);
+  text-transform: uppercase; letter-spacing: .8px;
+  margin-bottom: 4px;
+}
+.demo-grid {
+  display: flex; flex-wrap: wrap; gap: 12px;
+  justify-content: center;
+}
+.demo-trigger {
+  padding: 10px 20px; border-radius: 12px;
+  border: 1px solid var(--border2);
+  background: var(--s1);
+  font-family: 'Inter', sans-serif;
+  font-size: 13px; font-weight: 600; color: var(--text);
+  cursor: pointer; transition: all .15s;
+  display: flex; flex-direction: column; align-items: flex-start; gap: 4px;
+  min-width: 180px;
+}
+.demo-trigger:hover { background: var(--s2); border-color: var(--p); }
+.demo-trigger .trigger-time { font-size: 11px; color: var(--muted); }
+</style>
+</head>
+<body>
+
+<div>
+  <div class="demo-title">Modal RDV Détail — Glambook Kit</div>
+  <p style="font-size:12px;color:var(--muted);margin-top:4px;margin-bottom:20px;text-align:center">Cliquez sur un RDV pour voir le modal</p>
+  <div class="demo-grid">
+
+    <button class="demo-trigger" onclick="openRdvDetail({av:'L',name:'Leila Benhay',meta:'3 visites · 06 61 23 45 67',time:'15:00 – 16:00',svc:'Coupe femme + Brushing · 60 min',staff:'Rachida',source:'WhatsApp',amount:'200 MAD',status:'planned',badgeClass:'badge-blue',statusLabel:'Planifié'})">
+      <div>Leila Benhay</div>
+      <div class="trigger-time">15:00 · Planifié</div>
+    </button>
+
+    <button class="demo-trigger" onclick="openRdvDetail({av:'F',name:'Fatima Zahra',meta:'2 visites · Sans RDV',time:'14:00 – 15:30',svc:'Mèches complètes · 90 min',staff:'Hicham',source:'Accueil salon',amount:'350 MAD',note:'Préfère ammoniaque libre',status:'inprogress',badgeClass:'badge-green',statusLabel:'En cours'})">
+      <div>Fatima Zahra</div>
+      <div class="trigger-time">14:00 · En cours</div>
+    </button>
+
+    <button class="demo-trigger" onclick="openRdvDetail({av:'K',name:'Khadija Moussaoui',meta:'7 visites · 06 62 11 22 33',time:'13:00 – 13:45',svc:'Brushing · 45 min',staff:'Ahlam',source:'WhatsApp',amount:'120 MAD',status:'done',badgeClass:'badge-done',statusLabel:'Terminé'})">
+      <div>Khadija Moussaoui</div>
+      <div class="trigger-time">13:00 · Terminé</div>
+    </button>
+
+    <button class="demo-trigger" onclick="openRdvDetail({av:'H',name:'Hanae Berrada',meta:'2 visites · 06 68 45 67 89',time:'12:30 – 14:30',svc:'Balayage · 120 min',staff:'Azhaar',source:'En ligne',amount:'450 MAD',note:'Allergie nickel signalée',status:'noshow',badgeClass:'badge-red',statusLabel:'No-show'})">
+      <div>Hanae Berrada</div>
+      <div class="trigger-time">12:30 · No-show</div>
+    </button>
+
+  </div>
+</div>
+
+<!-- ── MODAL RDV DÉTAIL ── -->
+<div class="modal-overlay" id="modal-rdv-detail" onclick="handleOverlayClick(event)">
+  <div class="modal">
+
+    <div class="modal-header">
+      <div class="modal-header-dot" id="rdv-header-dot"></div>
+      <div class="modal-title">Rendez-vous</div>
+      <button class="modal-close" onclick="closeModal('modal-rdv-detail')">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Hero client -->
+    <div class="rdv-detail-hero">
+      <div class="rdv-detail-av" id="rdv-av">?</div>
+      <div style="flex:1;min-width:0">
+        <div class="rdv-detail-name" id="rdv-name">—</div>
+        <div class="rdv-detail-meta" id="rdv-meta">—</div>
+      </div>
+      <span id="rdv-status-badge" class="badge">—</span>
+    </div>
+
+    <!-- Grille d'infos -->
+    <div class="modal-body">
+      <div class="rdv-info-grid">
+        <div class="rdv-info-row">
+          <span class="rdv-info-label">Heure</span>
+          <span class="rdv-info-val" id="rdv-time">—</span>
+        </div>
+        <div class="rdv-info-row">
+          <span class="rdv-info-label">Prestation</span>
+          <span class="rdv-info-val" id="rdv-svc">—</span>
+        </div>
+        <div class="rdv-info-row">
+          <span class="rdv-info-label">Collaborateur</span>
+          <span class="rdv-info-val" id="rdv-staff">—</span>
+        </div>
+        <div class="rdv-info-row">
+          <span class="rdv-info-label">Source</span>
+          <span class="rdv-info-val" id="rdv-source">—</span>
+        </div>
+        <div class="rdv-info-row" id="rdv-note-row" style="display:none">
+          <span class="rdv-info-label">Note client</span>
+          <span class="rdv-info-val" id="rdv-note">—</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Montant -->
+    <div class="rdv-amount-row">
+      <span class="rdv-amount-label">Total estimé</span>
+      <span class="rdv-amount-val" id="rdv-amount">—</span>
+    </div>
+
+    <!-- Actions — injectées par JS selon statut -->
+    <div class="modal-footer" id="rdv-footer-actions"></div>
+
+  </div>
+</div>
+
+<script>
+function openModal(id) {
+  document.getElementById(id).classList.add('open')
+  document.body.style.overflow = 'hidden'
+}
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open')
+  document.body.style.overflow = ''
+}
+function handleOverlayClick(e) {
+  if (e.target === e.currentTarget) closeModal(e.currentTarget.id)
+}
+
+const DOT_COLORS = {
+  planned:    'var(--blue)',
+  inprogress: 'var(--p)',
+  done:       'var(--light)',
+  noshow:     'var(--red)'
+}
+
+function openRdvDetail(d) {
+  // Champs fixes
+  document.getElementById('rdv-av').textContent     = d.av
+  document.getElementById('rdv-name').textContent   = d.name
+  document.getElementById('rdv-meta').textContent   = d.meta
+  document.getElementById('rdv-time').textContent   = d.time
+  document.getElementById('rdv-svc').textContent    = d.svc
+  document.getElementById('rdv-staff').textContent  = d.staff
+  document.getElementById('rdv-source').textContent = d.source
+  document.getElementById('rdv-amount').textContent = d.amount
+
+  // Note (optionnelle)
+  const noteRow = document.getElementById('rdv-note-row')
+  if (d.note) {
+    document.getElementById('rdv-note').textContent = d.note
+    noteRow.style.display = ''
+  } else {
+    noteRow.style.display = 'none'
+  }
+
+  // Badge + point coloré
+  const badge = document.getElementById('rdv-status-badge')
+  badge.className = 'badge ' + d.badgeClass
+  badge.textContent = d.statusLabel
+  document.getElementById('rdv-header-dot').style.background = DOT_COLORS[d.status] || 'var(--p)'
+
+  // Actions dynamiques selon statut
+  const footer = document.getElementById('rdv-footer-actions')
+  if (d.status === 'planned') {
+    footer.innerHTML = `
+      <button class="btn-modal-edit">Modifier</button>
+      <button class="btn-modal-noshow">No-show</button>
+      <button class="btn-modal-confirm">Arrivée ✓</button>`
+  } else if (d.status === 'inprogress') {
+    footer.innerHTML = `
+      <button class="btn-modal-edit">Modifier</button>
+      <button class="btn-modal-cancel" onclick="closeModal('modal-rdv-detail')">Annuler RDV</button>
+      <button class="btn-modal-confirm">Terminer ✓</button>`
+  } else {
+    footer.innerHTML = `
+      <button class="btn-modal-cancel" onclick="closeModal('modal-rdv-detail')" style="margin:0 auto">Fermer</button>`
+  }
+
+  openModal('modal-rdv-detail')
+}
+
+// Fermer avec Echap
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeModal('modal-rdv-detail')
+})
+</script>
+</body>
+</html>

@@ -1,8 +1,18 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import BaseModal from '../modal/BaseModal.vue'
 import CustomSelect from '../common/CustomSelect.vue'
 import { supabase } from '@/lib/supabase'
+
+// ── Confirmation inline (remplace window.confirm) ─────────────────────────────
+const pendingConfirm = ref(null) // { message, resolve }
+function askConfirm(message) {
+  return new Promise(resolve => { pendingConfirm.value = { message, resolve } })
+}
+function resolveConfirm(ok) {
+  pendingConfirm.value?.resolve(ok)
+  pendingConfirm.value = null
+}
 
 const props = defineProps({
   appointment: { type: Object, required: true },
@@ -14,8 +24,7 @@ const emit = defineEmits(['close', 'refresh'])
 const apptId = props.appointment.id
 
 function localNowIso() {
-  const now = new Date()
-  return now.toLocaleDateString('en-CA') + 'T' + now.toTimeString().substring(0, 8)
+  return new Date().toISOString()
 }
 
 // ── Lignes locales ────────────────────────────────────────────────────────────
@@ -24,21 +33,22 @@ const rawSvcs = props.appointment.raw?.appointment_services || []
 const lines = ref(
   rawSvcs.length
     ? rawSvcs.map(s => ({
-        id:        s.id,
-        serviceId: s.service?.id ?? s.service_id ?? null,
-        staffId:   s.staff?.id   ?? s.staff_id   ?? null,
-        status:    s.status ?? 'active',
-        _new:      false,
-        _saving:   false
+        id:               s.id,
+        serviceId:        s.service?.id ?? s.service_id ?? null,
+        staffId:          s.staff?.id   ?? s.staff_id   ?? null,
+        price_at_booking: s.price_at_booking ?? s.service?.price ?? null,
+        status:           s.status ?? 'active',
+        _new:             false,
+        _saving:          false
       }))
-    : [{ id: null, serviceId: null, staffId: props.appointment.raw?.staff_id ?? null, status: 'active', _new: true, _saving: false }]
+    : [{ id: null, serviceId: null, staffId: props.appointment.raw?.staff_id ?? null, price_at_booking: null, status: 'active', _new: true, _saving: false }]
 )
 
 const focusedSvcId = props.appointment.svcId
 const isSaving     = ref(false)
 
 // ── Règle de statut ───────────────────────────────────────────────────────────
-function isActive(l) { return l.status !== 'cancelled' && l.status !== 'completed' }
+function isActive(l) { return l.status !== 'cancelled' }
 
 function statusLabel(line) {
   if (line.status === 'completed') return 'Terminé'
@@ -47,7 +57,7 @@ function statusLabel(line) {
 }
 
 function computeApptStatus(lineList) {
-  if (!lineList.length) return 'in_progress'
+  if (!lineList.length) return 'cancelled'   // plus aucune prestation → annulé
   if (lineList.every(l => l.status === 'cancelled')) return 'cancelled'
   if (lineList.every(l => l.status === 'completed' || l.status === 'cancelled')) return 'completed'
   return 'in_progress'
@@ -113,20 +123,21 @@ async function handleSave() {
   try {
     for (const line of lines.value) {
       if (line._new) {
-        if (line.serviceId || line.staffId) {
+        if (line.serviceId) {
           const { error } = await supabase.from('appointment_services').insert({
-            appointment_id: apptId,
-            service_id:     line.serviceId,
-            staff_id:       line.staffId,
-            status:         'active'
+            appointment_id:   apptId,
+            service_id:       line.serviceId,
+            staff_id:         line.staffId || null,
+            price_at_booking: line.price_at_booking != null ? Number(line.price_at_booking) : null
           })
           if (error) throw error
         }
-      } else {
+      } else if (line.status !== 'cancelled') {
+        // Ne pas écraser les lignes annulées
         const { error } = await supabase.from('appointment_services').update({
-          service_id: line.serviceId,
-          staff_id:   line.staffId
-          // status non modifié ici — géré par les boutons immédiats
+          service_id:       line.serviceId,
+          staff_id:         line.staffId || null,
+          price_at_booking: line.price_at_booking != null ? Number(line.price_at_booking) : null
         }).eq('id', line.id)
         if (error) throw error
       }
@@ -144,7 +155,8 @@ async function handleSave() {
 
 // ── Annuler tout ──────────────────────────────────────────────────────────────
 async function handleCancelAll() {
-  if (!confirm('Voulez-vous vraiment annuler ce rendez-vous ?')) return
+  const ok = await askConfirm('Voulez-vous vraiment annuler ce rendez-vous ?')
+  if (!ok) return
   isSaving.value = true
   try {
     await supabase.from('appointment_services')
@@ -186,7 +198,8 @@ async function handleReactivateAll() {
 
 // ── Supprimer une ligne ───────────────────────────────────────────────────────
 async function deleteLine(line, idx) {
-  if (!confirm('Supprimer définitivement cette prestation ?')) return
+  const ok = await askConfirm('Supprimer définitivement cette prestation ?')
+  if (!ok) return
   line._saving = true
   try {
     if (line.id) {
@@ -196,13 +209,17 @@ async function deleteLine(line, idx) {
     lines.value.splice(idx, 1)
 
     // Relire la DB pour avoir l'état réel des services restants
-    const { data: remaining } = await supabase
+    const { data: remaining, error: remErr } = await supabase
       .from('appointment_services')
       .select('id, status')
       .eq('appointment_id', apptId)
 
+    // Si la requête échoue, ne pas supprimer l'appointment — lever l'erreur
+    if (remErr) throw remErr
+
     if (!remaining || remaining.length === 0) {
-      await supabase.from('appointments').delete().eq('id', apptId)
+      const { error: apptErr } = await supabase.from('appointments').delete().eq('id', apptId)
+      if (apptErr) throw apptErr
     } else {
       const newStatus = computeApptStatus(remaining)
       const update = { status: newStatus }
@@ -217,20 +234,33 @@ async function deleteLine(line, idx) {
     console.error('Erreur suppression:', e)
     alert('Erreur : ' + (e.message || JSON.stringify(e)))
   } finally {
-    line._saving = false
+    line._saving = false   // toujours réinitialiser
   }
 }
 
+// ── Auto-remplir le prix depuis le catalogue quand on change de prestation ────
+watch(
+  () => lines.value.map(l => l.serviceId),
+  (newIds, oldIds) => {
+    newIds.forEach((id, i) => {
+      if (id && id !== oldIds?.[i]) {
+        const svc = props.services.find(s => s.id === id)
+        if (svc?.price != null) lines.value[i].price_at_booking = svc.price
+      }
+    })
+  }
+)
+
 // ── Ajouter une ligne ─────────────────────────────────────────────────────────
 function addLine() {
-  lines.value.push({ id: null, serviceId: null, staffId: null, status: 'active', _new: true, _saving: false })
+  lines.value.push({ id: null, serviceId: null, staffId: null, price_at_booking: null, status: 'active', _new: true, _saving: false })
 }
 
 // ── Computed ──────────────────────────────────────────────────────────────────
 const allCancelled = computed(() =>
   lines.value.length > 0 && lines.value.every(l => l.status === 'cancelled')
 )
-const canCancelAll = computed(() => lines.value.some(isActive))
+const canCancelAll = computed(() => !props.appointment.isWalkin && lines.value.some(isActive))
 </script>
 
 <template>
@@ -287,6 +317,16 @@ const canCancelAll = computed(() => lines.value.some(isActive))
                 class="field-staff"
                 :disabled="!isActive(line)"
               />
+              <div class="field-price-wrap">
+                <input
+                  v-model="line.price_at_booking"
+                  type="number" min="0" step="1"
+                  placeholder="Prix"
+                  class="field-price"
+                  :disabled="!isActive(line)"
+                />
+                <span class="field-price-suffix">DH</span>
+              </div>
             </div>
 
             <!-- Badge statut -->
@@ -351,6 +391,17 @@ const canCancelAll = computed(() => lines.value.some(isActive))
         </button>
       </div>
     </div>
+    <!-- Confirmation inline (remplace window.confirm) -->
+    <BaseModal v-if="pendingConfirm" @close="resolveConfirm(false)">
+      <header class="modal-title">Confirmation</header>
+      <div class="modal-body">
+        <p style="font-size:13.5px;color:var(--text-main);line-height:1.6">{{ pendingConfirm.message }}</p>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-secondary" @click="resolveConfirm(false)">Annuler</button>
+        <button class="btn btn-primary btn-warning-solid" @click="resolveConfirm(true)">Confirmer</button>
+      </div>
+    </BaseModal>
   </BaseModal>
 </template>
 
@@ -391,11 +442,11 @@ const canCancelAll = computed(() => lines.value.some(isActive))
 .svc-row {
   display: flex; align-items: center; gap: 8px;
   padding: 10px 12px; border: 1.5px solid var(--border);
-  border-radius: 10px; background: #f8fafc; transition: border-color .15s;
+  border-radius: 10px; background: var(--bg-soft); transition: border-color .15s;
 }
-.svc-row.row-focused   { border-color: var(--primary); background: #f0f6ff; }
-.svc-row.row-cancelled { opacity: .6; background: #fff5f5; border-color: #fca5a5; }
-.svc-row.row-completed { opacity: .6; background: #f0fdf4; border-color: #86efac; }
+.svc-row.row-focused   { border-color: var(--primary); background: var(--primary-soft); }
+.svc-row.row-cancelled { opacity: .6; background: var(--red-soft); border-color: rgba(220,38,38,.3); }
+.svc-row.row-completed { background: var(--green-soft); border-color: rgba(21,128,61,.25); }
 
 .row-num {
   width: 22px; height: 22px; border-radius: 50%;
@@ -404,17 +455,30 @@ const canCancelAll = computed(() => lines.value.some(isActive))
   display: flex; align-items: center; justify-content: center; flex-shrink: 0;
 }
 
-.row-fields { display: flex; gap: 8px; flex: 1; min-width: 0; }
-.field-service { flex: 1; min-width: 0; }
-.field-staff   { flex: 1; min-width: 0; }
+.row-fields { display: flex; gap: 8px; flex: 1; min-width: 0; align-items: center; }
+.field-service { flex: 2; min-width: 0; }
+.field-staff   { flex: 2; min-width: 0; }
+.field-price-wrap { position: relative; width: 90px; flex-shrink: 0; }
+.field-price {
+  width: 100%; padding: 7px 26px 7px 10px;
+  border: 1px solid var(--border); border-radius: 8px;
+  font-size: 13px; color: var(--text-main); background: var(--bg-main);
+  font-family: inherit; height: 100%;
+}
+.field-price:focus { outline: none; border-color: var(--primary); }
+.field-price:disabled { opacity: 0.5; }
+.field-price-suffix {
+  position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+  font-size: 11px; color: var(--text-muted); pointer-events: none;
+}
 
 .status-badge {
   font-size: 10.5px; font-weight: 700; white-space: nowrap; flex-shrink: 0;
   padding: 3px 8px; border-radius: 999px;
 }
-.status-badge--active    { background: #dbeafe; color: #1e40af; border: 1px solid #93c5fd; }
-.status-badge--done      { background: #dcfce7; color: #16a34a; border: 1px solid #86efac; }
-.status-badge--cancelled { background: #fee2e2; color: #dc2626; border: 1px solid #fca5a5; }
+.status-badge--active    { background: var(--primary-soft);  color: var(--primary); border: 1px solid rgba(168,129,10,.2); }
+.status-badge--done      { background: var(--green-soft);    color: var(--green);   border: 1px solid rgba(21,128,61,.2); }
+.status-badge--cancelled { background: var(--red-soft);      color: var(--red);     border: 1px solid rgba(220,38,38,.2); }
 
 .row-actions { flex-shrink: 0; display: flex; align-items: center; }
 
@@ -424,14 +488,14 @@ const canCancelAll = computed(() => lines.value.some(isActive))
   background: transparent; transition: all .12s;
 }
 .btn-cancel-line:disabled, .btn-reactivate-line:disabled, .btn-delete-line:disabled { opacity: .5; cursor: not-allowed; }
-.btn-cancel-line      { border-color: #fca5a5; color: #dc2626; }
-.btn-cancel-line:hover:not(:disabled) { background: #fee2e2; }
-.btn-reactivate-line      { border-color: #86efac; color: #16a34a; }
-.btn-reactivate-line:hover:not(:disabled) { background: #dcfce7; }
+.btn-cancel-line      { border-color: rgba(220,38,38,.3); color: var(--red); }
+.btn-cancel-line:hover:not(:disabled) { background: var(--red-soft); }
+.btn-reactivate-line      { border-color: rgba(21,128,61,.3); color: var(--green); }
+.btn-reactivate-line:hover:not(:disabled) { background: var(--green-soft); }
 .btn-delete-line {
-  width: 28px; height: 28px; border-radius: 7px; border: 1.5px solid #e2e8f0;
+  width: 28px; height: 28px; border-radius: 7px; border: 1.5px solid var(--border-strong);
   display: flex; align-items: center; justify-content: center; cursor: pointer;
-  background: transparent; color: #94a3b8; transition: all .12s; margin-left: 2px;
+  background: transparent; color: var(--text-light); transition: all .12s; margin-left: 2px;
 }
 .btn-delete-line:hover:not(:disabled) { border-color: #fca5a5; color: #dc2626; background: #fff5f5; }
 
@@ -456,7 +520,17 @@ const canCancelAll = computed(() => lines.value.some(isActive))
 }
 .btn-reactivate:hover { background: #dcfce7; }
 
-@media (max-width: 520px) {
+.btn-warning-solid {
+  background: #dc2626; border-color: #dc2626; color: #fff;
+}
+.btn-warning-solid:hover { background: #b91c1c; }
+
+/* Élargir la modale pour avoir de la place */
+:deep(.modal) { width: 600px; }
+
+@media (max-width: 620px) {
+  :deep(.modal) { width: 100%; }
   .row-fields { flex-direction: column; }
+  .field-price-wrap { width: 100%; }
 }
 </style>

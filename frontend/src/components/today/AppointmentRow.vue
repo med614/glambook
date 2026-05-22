@@ -84,11 +84,11 @@ defineProps({
   border-radius: 2px 0 0 2px;
 }
 
-.appointment-item.current  { background: #f0fdf4; border-color: #bbf7d0; }
-.appointment-item.current .row-indicator { background: #22c55e; }
+.appointment-item.current  { background: var(--green-soft); border-color: rgba(21,128,61,.2); }
+.appointment-item.current .row-indicator { background: var(--green); }
 
-.appointment-item.upcoming { background: #eff6ff; border-color: #bfdbfe; }
-.appointment-item.upcoming .row-indicator { background: #3b82f6; }
+.appointment-item.upcoming { background: var(--primary-soft); border-color: rgba(168,129,10,.2); }
+.appointment-item.upcoming .row-indicator { background: var(--primary); }
 
 .appointment-item.past { opacity: 0.55; filter: grayscale(1); }
 
@@ -99,7 +99,7 @@ defineProps({
   padding: 4px 8px;
   background: rgba(0,0,0,0.04);
   border-radius: 6px;
-  color: #64748b;
+  color: var(--text-muted);
   min-width: 80px;
   flex-shrink: 0;
 }
@@ -107,9 +107,9 @@ defineProps({
 .time-text { font-size: 11px; font-weight: 800; }
 
 .client-block { flex: 1; display: flex; flex-direction: column; min-width: 0; }
-.client-name { font-size: 13.5px; font-weight: 700; color: #1e293b; }
+.client-name { font-size: 13.5px; font-weight: 700; color: var(--text-main); }
 .service-tag {
-  font-size: 11px; color: #64748b;
+  font-size: 11px; color: var(--text-muted);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 
@@ -117,7 +117,7 @@ defineProps({
   display: flex;
   align-items: center;
   gap: 5px;
-  background: #1e293b;
+  background: var(--primary);
   color: #fff;
   border: none;
   padding: 6px 12px;
@@ -129,7 +129,7 @@ defineProps({
   flex-shrink: 0;
   transition: background 0.15s;
 }
-.finish-btn:hover { background: #0f172a; }
+.finish-btn:hover { background: var(--primary-light); }
 
 .external-flag {
   display: inline-flex;
@@ -139,9 +139,9 @@ defineProps({
   font-weight: 700;
   padding: 2px 6px;
   border-radius: 999px;
-  background: #fef3c7;
-  color: #92400e;
-  border: 1px solid #fde68a;
+  background: var(--orange-soft);
+  color: var(--orange);
+  border: 1px solid rgba(217,119,6,.25);
   white-space: nowrap;
 }
 
@@ -149,7 +149,7 @@ defineProps({
   font-size: 10px;
   font-weight: 800;
   text-transform: uppercase;
-  color: #94a3b8;
+  color: var(--text-light);
   letter-spacing: 0.05em;
   flex-shrink: 0;
 }

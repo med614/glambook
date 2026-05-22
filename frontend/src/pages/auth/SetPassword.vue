@@ -106,7 +106,7 @@ async function handleSubmit() {
 <style scoped>
 .reset-page {
   min-height: 100vh;
-  background: #f1f5f9;
+  background: var(--bg-soft);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -131,24 +131,24 @@ async function handleSubmit() {
 }
 .brand-icon {
   width: 38px; height: 38px;
-  background: linear-gradient(135deg, #6366f1, #3b82f6);
+  background: linear-gradient(135deg, var(--primary), var(--primary-light));
   border-radius: 10px;
   display: flex; align-items: center; justify-content: center;
   color: #fff;
 }
-.brand-name { font-size: 18px; font-weight: 800; color: #0f172a; }
+.brand-name { font-size: 18px; font-weight: 800; color: var(--text-main); }
 
 .reset-header { text-align: center; }
-.reset-header h1 { font-size: 20px; font-weight: 800; color: #0f172a; margin: 0 0 6px; }
-.reset-header p  { font-size: 13.5px; color: #64748b; margin: 0; }
+.reset-header h1 { font-size: 20px; font-weight: 800; color: var(--text-main); margin: 0 0 6px; }
+.reset-header p  { font-size: 13.5px; color: var(--text-muted); margin: 0; }
 
 .state-center {
   display: flex; flex-direction: column;
   align-items: center; gap: 12px;
   padding: 20px 0;
-  color: #64748b; font-size: 14px; text-align: center;
+  color: var(--text-muted); font-size: 14px; text-align: center;
 }
-.state-center h2 { font-size: 18px; font-weight: 800; color: #0f172a; margin: 0; }
+.state-center h2 { font-size: 18px; font-weight: 800; color: var(--text-main); margin: 0; }
 .state-center p { margin: 0; }
 .state-center.success { color: #16a34a; }
 
@@ -161,8 +161,8 @@ async function handleSubmit() {
 
 .spinner {
   width: 28px; height: 28px;
-  border: 3px solid #e2e8f0;
-  border-top-color: #6366f1;
+  border: 3px solid var(--border-strong);
+  border-top-color: var(--primary);
   border-radius: 50%;
   animation: spin .7s linear infinite;
 }
@@ -177,24 +177,24 @@ async function handleSubmit() {
 
 .reset-form { display: flex; flex-direction: column; gap: 14px; }
 .field { display: flex; flex-direction: column; gap: 6px; }
-.field label { font-size: 12.5px; font-weight: 700; color: #475569; }
+.field label { font-size: 12.5px; font-weight: 700; color: var(--text-muted); }
 .field input {
   padding: 10px 13px;
-  border: 1.5px solid #e2e8f0; border-radius: 9px;
-  font-size: 14px; color: #0f172a; background: #f8fafc;
+  border: 1.5px solid var(--border-strong); border-radius: 9px;
+  font-size: 14px; color: var(--text-main); background: var(--bg-main);
   transition: border-color .15s;
 }
 .field input:focus {
-  outline: none; border-color: #6366f1; background: #fff;
-  box-shadow: 0 0 0 3px rgba(99,102,241,.1);
+  outline: none; border-color: var(--primary); background: #fff;
+  box-shadow: 0 0 0 3px var(--input-focus-ring);
 }
 
 .btn-submit {
   padding: 11px;
-  background: linear-gradient(135deg, #6366f1, #3b82f6);
+  background: linear-gradient(135deg, var(--primary), var(--primary-light));
   color: #fff; border: none; border-radius: 10px;
   font-size: 14px; font-weight: 700; cursor: pointer;
-  box-shadow: 0 2px 10px rgba(99,102,241,.3);
+  box-shadow: 0 2px 10px var(--primary-glow);
   transition: opacity .15s;
 }
 .btn-submit:hover:not(:disabled) { opacity: .9; }

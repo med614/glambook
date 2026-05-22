@@ -138,51 +138,61 @@ function typeLabel(t) {
 }
 
 // ── Abonnement ────────────────────────────────────────────────────────────────
-const sub       = ref(null)
-const payments  = ref([])
+const sub        = ref(null)
+const payments   = ref([])
 const subLoading = ref(false)
-const subSaving  = ref(false)
-const subMsg     = ref('')
 const subError   = ref('')
-const payNote    = ref('')
-const payAmount  = ref('')
-const showPayForm = ref(false)
-const payAdding  = ref(false)
+const subMsg     = ref('')
 
-const SUB_STATUSES = [
-  { value: 'trial',     label: 'Essai',    color: '#6366f1' },
-  { value: 'active',    label: 'Actif',    color: '#22c55e' },
-  { value: 'suspended', label: 'Suspendu', color: '#f59e0b' },
-  { value: 'cancelled', label: 'Annulé',   color: '#ef4444' }
-]
+// Paiement rapide
+const payAmount   = ref('')
+const payNote     = ref('')
+const payMonths   = ref(1)
+const payAdding   = ref(false)
 
-function subStatusMeta(status) {
-  return SUB_STATUSES.find(s => s.value === status) || { label: '—', color: '#94a3b8' }
+// Essai
+const trialDays    = ref(14)
+const showTrialPicker = ref(false)
+const trialSaving  = ref(false)
+
+// Paramètres (accordéon)
+const showConfig   = ref(false)
+const configSaving = ref(false)
+
+const STATUS_META = {
+  trial:     { label: 'Essai',    color: 'var(--primary)', bg: 'var(--primary-soft)', border: 'var(--primary-mid)' },
+  active:    { label: 'Actif',    color: '#16a34a', bg: '#f0fdf4', border: '#86efac' },
+  suspended: { label: 'Suspendu', color: '#d97706', bg: '#fffbeb', border: '#fde68a' },
+  cancelled: { label: 'Annulé',   color: '#dc2626', bg: '#fef2f2', border: '#fca5a5' },
 }
 
-const paidUntilDaysLeft = computed(() => {
+function statusMeta(s) {
+  return STATUS_META[s] || { label: '—', color: 'var(--text-light)', bg: 'var(--bg-main)', border: 'var(--border-strong)' }
+}
+
+const daysLeft = computed(() => {
   if (!sub.value?.paid_until) return null
-  const diff = Math.ceil((new Date(sub.value.paid_until) - new Date()) / 86400000)
-  return diff
+  return Math.ceil((new Date(sub.value.paid_until) - new Date()) / 86400000)
 })
 
-const paidUntilLabel = computed(() => {
-  if (!sub.value?.paid_until) return 'Non défini'
-  const days = paidUntilDaysLeft.value
-  const date = new Date(sub.value.paid_until).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })
-  if (days < 0)  return `Expiré depuis ${Math.abs(days)} j — ${date}`
-  if (days === 0) return `Expire aujourd'hui — ${date}`
-  if (days <= 7)  return `Dans ${days} jour${days > 1 ? 's' : ''} — ${date}`
-  return date
+const expiryLabel = computed(() => {
+  if (!sub.value?.paid_until) return 'Aucune date d\'expiration'
+  const d = daysLeft.value
+  const date = new Date(sub.value.paid_until + 'T12:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })
+  if (d < 0)   return `Expiré depuis ${Math.abs(d)} jour${Math.abs(d) > 1 ? 's' : ''}`
+  if (d === 0) return `Expire aujourd'hui`
+  if (d <= 7)  return `Expire dans ${d} jour${d > 1 ? 's' : ''}`
+  return `Expire le ${date}`
 })
+
+const totalEncaisse = computed(() =>
+  payments.value.reduce((s, p) => s + (p.amount || 0), 0)
+)
 
 async function loadSub() {
   subLoading.value = true
   try {
-    const [s, p] = await Promise.all([
-      fetchSubscription(props.org.id),
-      fetchPayments(props.org.id)
-    ])
+    const [s, p] = await Promise.all([fetchSubscription(props.org.id), fetchPayments(props.org.id)])
     sub.value      = s || { status: 'trial', paid_until: null, monthly_price: null, notes: '' }
     payments.value = p
   } finally {
@@ -190,48 +200,13 @@ async function loadSub() {
   }
 }
 
-watch(() => props.org, () => {
-  if (tab.value === 'abonnement') loadSub()
-}, { immediate: false })
+watch(() => props.org, () => { if (tab.value === 'abonnement') loadSub() })
+watch(tab, t => { if (t === 'abonnement') loadSub() })
 
-watch(tab, (t) => {
-  if (t === 'abonnement') loadSub()
-})
-
-async function saveSub() {
-  subSaving.value = true; subMsg.value = ''; subError.value = ''
-  try {
-    sub.value = await upsertSubscription(props.org.id, {
-      status:        sub.value.status,
-      paid_until:    sub.value.paid_until || null,
-      monthly_price: sub.value.monthly_price || null,
-      notes:         sub.value.notes || null
-    })
-    subMsg.value = 'Abonnement mis à jour.'
-    emit('updated')
-  } catch (e) {
-    subError.value = e.message
-  } finally {
-    subSaving.value = false
-  }
-}
-
-async function addOneMonth() {
-  const base = sub.value?.paid_until && new Date(sub.value.paid_until) > new Date()
-    ? new Date(sub.value.paid_until)
-    : new Date()
-  base.setMonth(base.getMonth() + 1)
-  const newDate = base.toLocaleDateString('en-CA')
-
-  if (!sub.value) sub.value = { status: 'active', paid_until: null, monthly_price: null, notes: '' }
-  sub.value.paid_until = newDate
-  if (sub.value.status !== 'active') sub.value.status = 'active'
-  await saveSub()
-}
-
-async function handleAddPayment() {
+// Enregistrer un paiement + prolonger l'abo
+async function handlePayment() {
   if (!payAmount.value) return
-  payAdding.value = true
+  payAdding.value = true; subError.value = ''
   try {
     const today = new Date().toLocaleDateString('en-CA')
     const p = await addPayment(props.org.id, {
@@ -240,13 +215,87 @@ async function handleAddPayment() {
       note: payNote.value || null
     })
     payments.value.unshift(p)
-    payAmount.value = ''
-    payNote.value = ''
-    showPayForm.value = false
+
+    // Prolonger l'abonnement
+    const base = sub.value?.paid_until && new Date(sub.value.paid_until) > new Date()
+      ? new Date(sub.value.paid_until + 'T12:00:00')
+      : new Date()
+    base.setMonth(base.getMonth() + parseInt(payMonths.value))
+    sub.value = await upsertSubscription(props.org.id, {
+      status: 'active',
+      paid_until: base.toLocaleDateString('en-CA'),
+      monthly_price: sub.value?.monthly_price || null,
+      notes: sub.value?.notes || null
+    })
+
+    payAmount.value = ''; payNote.value = ''; payMonths.value = 1
+    subMsg.value = 'Paiement enregistré · abonnement prolongé.'
+    setTimeout(() => subMsg.value = '', 3000)
+    emit('updated')
   } catch (e) {
     subError.value = e.message
   } finally {
     payAdding.value = false
+  }
+}
+
+// Démarrer un essai
+async function startTrial() {
+  trialSaving.value = true; subError.value = ''
+  try {
+    const end = new Date()
+    end.setDate(end.getDate() + parseInt(trialDays.value))
+    sub.value = await upsertSubscription(props.org.id, {
+      status: 'trial',
+      paid_until: end.toLocaleDateString('en-CA'),
+      monthly_price: sub.value?.monthly_price || null,
+      notes: sub.value?.notes || null
+    })
+    showTrialPicker.value = false
+    subMsg.value = `Essai démarré — ${trialDays.value} jours.`
+    setTimeout(() => subMsg.value = '', 3000)
+    emit('updated')
+  } catch (e) {
+    subError.value = e.message
+  } finally {
+    trialSaving.value = false
+  }
+}
+
+// Suspendre / Réactiver
+async function setStatus(status) {
+  subError.value = ''
+  try {
+    sub.value = await upsertSubscription(props.org.id, {
+      status,
+      paid_until: sub.value?.paid_until || null,
+      monthly_price: sub.value?.monthly_price || null,
+      notes: sub.value?.notes || null
+    })
+    subMsg.value = status === 'suspended' ? 'Abonnement suspendu.' : 'Abonnement réactivé.'
+    setTimeout(() => subMsg.value = '', 3000)
+    emit('updated')
+  } catch (e) {
+    subError.value = e.message
+  }
+}
+
+// Sauvegarder config (tarif + notes)
+async function saveConfig() {
+  configSaving.value = true; subError.value = ''
+  try {
+    sub.value = await upsertSubscription(props.org.id, {
+      status: sub.value.status,
+      paid_until: sub.value.paid_until || null,
+      monthly_price: sub.value.monthly_price || null,
+      notes: sub.value.notes || null
+    })
+    subMsg.value = 'Paramètres mis à jour.'
+    setTimeout(() => subMsg.value = '', 3000)
+  } catch (e) {
+    subError.value = e.message
+  } finally {
+    configSaving.value = false
   }
 }
 
@@ -356,100 +405,134 @@ function formatDate(d) {
           <div v-if="subLoading" class="sub-loading">Chargement…</div>
           <template v-else>
 
-            <!-- Hero statut + paid_until -->
-            <div class="sub-hero" :class="'sub-hero--' + (sub?.status || 'trial')">
-              <div class="sub-hero-left">
-                <div class="sub-status-dot" :style="{ background: subStatusMeta(sub?.status).color }"></div>
-                <div>
-                  <div class="sub-status-label">{{ subStatusMeta(sub?.status).label }}</div>
-                  <div class="sub-paid-until" :class="{ 'paid-expired': paidUntilDaysLeft !== null && paidUntilDaysLeft < 0, 'paid-warning': paidUntilDaysLeft !== null && paidUntilDaysLeft >= 0 && paidUntilDaysLeft <= 7 }">
-                    {{ paidUntilLabel }}
+            <!-- Feedback -->
+            <div v-if="subMsg"   class="alert success">{{ subMsg }}</div>
+            <div v-if="subError" class="alert danger">{{ subError }}</div>
+
+            <!-- ── Hero statut ── -->
+            <div class="sub-hero2" :style="{ background: statusMeta(sub?.status).bg, borderColor: statusMeta(sub?.status).border }">
+              <div class="sub-hero2-top">
+                <div class="sub-status-badge" :style="{ background: statusMeta(sub?.status).color }">
+                  {{ statusMeta(sub?.status).label }}
+                </div>
+                <div class="sub-expiry" :class="{
+                  'expiry-ok':      daysLeft !== null && daysLeft > 7,
+                  'expiry-warn':    daysLeft !== null && daysLeft >= 0 && daysLeft <= 7,
+                  'expiry-expired': daysLeft !== null && daysLeft < 0
+                }">{{ expiryLabel }}</div>
+              </div>
+              <div v-if="sub?.paid_until" class="sub-date-line">
+                {{ new Date(sub.paid_until + 'T12:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }) }}
+                <template v-if="sub.monthly_price"> · {{ sub.monthly_price }} MAD/mois</template>
+              </div>
+
+              <!-- Actions rapides -->
+              <div class="sub-quick-actions">
+                <!-- Essai -->
+                <div class="trial-wrap">
+                  <button class="qa-btn qa-btn--purple" @click="showTrialPicker = !showTrialPicker">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                    Essai
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+                  </button>
+                  <div v-if="showTrialPicker" class="trial-picker">
+                    <span class="trial-picker-label">Durée de l'essai</span>
+                    <div class="trial-days-row">
+                      <button v-for="d in [7,14,30]" :key="d" class="trial-day-btn" :class="{ active: trialDays == d }" @click="trialDays = d">{{ d }}j</button>
+                    </div>
+                    <button class="qa-btn qa-btn--purple" style="width:100%;justify-content:center;margin-top:4px" @click="startTrial" :disabled="trialSaving">
+                      {{ trialSaving ? '…' : 'Démarrer l\'essai' }}
+                    </button>
                   </div>
                 </div>
-              </div>
-              <button class="btn-add-month" @click="addOneMonth" :disabled="subSaving" title="+1 mois">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                1 mois
-              </button>
-            </div>
 
-            <!-- Formulaire config -->
-            <div class="sub-form-card">
-              <div class="section-label">Configuration</div>
-
-              <div class="field">
-                <label>Statut</label>
-                <select v-model="sub.status">
-                  <option v-for="s in SUB_STATUSES" :key="s.value" :value="s.value">{{ s.label }}</option>
-                </select>
-              </div>
-
-              <div class="field-row">
-                <div class="field">
-                  <label>Payé jusqu'au</label>
-                  <input v-model="sub.paid_until" type="date" />
-                </div>
-                <div class="field">
-                  <label>Tarif mensuel (MAD)</label>
-                  <input v-model="sub.monthly_price" type="number" min="0" placeholder="Ex: 299" />
-                </div>
-              </div>
-
-              <div class="field">
-                <label>Notes internes</label>
-                <textarea v-model="sub.notes" rows="2" placeholder="Conditions particulières…"></textarea>
-              </div>
-
-              <div v-if="subMsg" class="alert success">{{ subMsg }}</div>
-              <div v-if="subError" class="alert danger">{{ subError }}</div>
-
-              <button class="btn-primary" @click="saveSub" :disabled="subSaving">
-                {{ subSaving ? 'Enregistrement…' : 'Enregistrer' }}
-              </button>
-            </div>
-
-            <!-- Paiements -->
-            <div class="sub-payments-section">
-              <div class="sub-payments-header">
-                <span class="section-label">Historique des paiements</span>
-                <button class="btn-add-pay" @click="showPayForm = !showPayForm">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                  Ajouter
+                <!-- Suspendre / Réactiver -->
+                <button v-if="sub?.status !== 'suspended'" class="qa-btn qa-btn--gray" @click="setStatus('suspended')">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+                  Suspendre
+                </button>
+                <button v-else class="qa-btn qa-btn--green" @click="setStatus('active')">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                  Réactiver
                 </button>
               </div>
+            </div>
 
-              <!-- Mini formulaire ajout paiement -->
-              <div v-if="showPayForm" class="pay-form">
-                <div class="field-row">
-                  <div class="field">
-                    <label>Montant (MAD)</label>
-                    <input v-model="payAmount" type="number" min="0" placeholder="299" autofocus />
-                  </div>
-                  <div class="field">
-                    <label>Note</label>
-                    <input v-model="payNote" type="text" placeholder="Ex: Espèces" />
-                  </div>
+            <!-- ── Enregistrer un paiement ── -->
+            <div class="pay-card">
+              <div class="pay-card-title">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+                Enregistrer un paiement
+              </div>
+              <div class="pay-card-row">
+                <div class="field" style="flex:1">
+                  <label>Montant (MAD)</label>
+                  <input v-model="payAmount" type="number" min="0" placeholder="299" />
                 </div>
-                <div style="display:flex;gap:8px;margin-top:4px">
-                  <button class="btn-primary" style="padding:7px 16px;font-size:12.5px" @click="handleAddPayment" :disabled="payAdding || !payAmount">
-                    {{ payAdding ? '…' : 'Enregistrer' }}
-                  </button>
-                  <button class="btn-secondary" style="padding:7px 16px;font-size:12.5px" @click="showPayForm = false">Annuler</button>
+                <div class="field" style="flex:1">
+                  <label>Prolongation</label>
+                  <select v-model="payMonths">
+                    <option :value="1">1 mois</option>
+                    <option :value="2">2 mois</option>
+                    <option :value="3">3 mois</option>
+                    <option :value="6">6 mois</option>
+                    <option :value="12">1 an</option>
+                  </select>
                 </div>
               </div>
+              <div class="field">
+                <label>Note (optionnel)</label>
+                <input v-model="payNote" type="text" placeholder="Ex: Espèces, Virement…" />
+              </div>
+              <button class="btn-pay-submit" @click="handlePayment" :disabled="payAdding || !payAmount">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                {{ payAdding ? 'Enregistrement…' : 'Enregistrer & renouveler l\'abonnement' }}
+              </button>
+            </div>
 
-              <!-- Liste -->
-              <div v-if="payments.length" class="pay-list">
-                <div v-for="p in payments" :key="p.id" class="pay-row">
-                  <div class="pay-icon">
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+            <!-- ── Paramètres (accordéon) ── -->
+            <div class="config-accordion">
+              <button class="config-accordion-trigger" @click="showConfig = !showConfig">
+                <span>Paramètres</span>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" :style="{ transform: showConfig ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform .2s' }"><polyline points="6 9 12 15 18 9"/></svg>
+              </button>
+              <div v-if="showConfig" class="config-accordion-body">
+                <div class="field-row">
+                  <div class="field">
+                    <label>Payé jusqu'au</label>
+                    <input v-model="sub.paid_until" type="date" />
                   </div>
-                  <div class="pay-body">
-                    <div class="pay-amount">{{ p.amount ? p.amount.toLocaleString('fr-FR') + ' MAD' : '—' }}</div>
-                    <div class="pay-meta">{{ formatDate(p.paid_at) }}<template v-if="p.note"> · {{ p.note }}</template></div>
+                  <div class="field">
+                    <label>Tarif mensuel (MAD)</label>
+                    <input v-model="sub.monthly_price" type="number" min="0" placeholder="299" />
+                  </div>
+                </div>
+                <div class="field">
+                  <label>Notes internes</label>
+                  <textarea v-model="sub.notes" rows="2" placeholder="Conditions particulières…"></textarea>
+                </div>
+                <button class="btn-primary" @click="saveConfig" :disabled="configSaving" style="align-self:flex-start">
+                  {{ configSaving ? '…' : 'Enregistrer' }}
+                </button>
+              </div>
+            </div>
+
+            <!-- ── Historique des paiements ── -->
+            <div class="pay-history">
+              <div class="pay-history-header">
+                <span class="section-label">Historique</span>
+                <span v-if="totalEncaisse > 0" class="pay-total">Total : {{ totalEncaisse.toLocaleString('fr-FR') }} MAD</span>
+              </div>
+
+              <div v-if="payments.length" class="pay-timeline">
+                <div v-for="p in payments" :key="p.id" class="pay-tl-row">
+                  <div class="pay-tl-dot"></div>
+                  <div class="pay-tl-body">
+                    <div class="pay-tl-amount">{{ p.amount ? p.amount.toLocaleString('fr-FR') + ' MAD' : '—' }}</div>
+                    <div class="pay-tl-meta">{{ formatDate(p.paid_at) }}<template v-if="p.note"> · {{ p.note }}</template></div>
                   </div>
                   <button class="pay-delete" @click="handleDeletePayment(p.id)" title="Supprimer">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
                   </button>
                 </div>
               </div>
@@ -571,7 +654,7 @@ function formatDate(d) {
 <style scoped>
 .drawer-overlay {
   position: fixed; inset: 0;
-  background: rgba(15, 23, 42, 0.45);
+  background: rgba(28,26,16,.45);
   backdrop-filter: blur(2px);
   z-index: 9998;
   display: flex; justify-content: flex-end;
@@ -592,13 +675,13 @@ function formatDate(d) {
 .drawer-head {
   display: flex; align-items: center; gap: 14px;
   padding: 22px 20px 16px;
-  border-bottom: 1px solid #f1f5f9;
-  background: #0f172a;
+  border-bottom: 1px solid var(--bg-soft);
+  background: var(--text-main);
   position: relative;
 }
 .org-avatar-lg {
   width: 46px; height: 46px; border-radius: 12px;
-  background: linear-gradient(135deg, #6366f1, #3b82f6);
+  background: linear-gradient(135deg, var(--primary), var(--primary-light));
   color: #fff; font-size: 20px; font-weight: 800;
   display: flex; align-items: center; justify-content: center;
   flex-shrink: 0;
@@ -610,8 +693,8 @@ function formatDate(d) {
 .type-chip {
   font-size: 10.5px; font-weight: 700;
   padding: 2px 8px; border-radius: 999px;
-  background: #1e293b; color: #94a3b8;
-  border: 1px solid #334155;
+  background: var(--bg-soft); color: var(--text-light);
+  border: 1px solid var(--border-strong);
 }
 .status-dot-pill {
   display: inline-flex; align-items: center; gap: 5px;
@@ -625,29 +708,29 @@ function formatDate(d) {
 .drawer-close {
   position: absolute; top: 18px; right: 18px;
   width: 32px; height: 32px;
-  background: #1e293b; border: none; border-radius: 8px;
-  color: #64748b; cursor: pointer;
+  background: var(--bg-soft); border: none; border-radius: 8px;
+  color: var(--text-muted); cursor: pointer;
   display: flex; align-items: center; justify-content: center;
   transition: all .15s;
 }
-.drawer-close:hover { background: #334155; color: #fff; }
+.drawer-close:hover { background: var(--primary-soft); color: var(--primary); }
 
 /* Tabs */
 .drawer-tabs {
   display: flex;
-  border-bottom: 1px solid #f1f5f9;
+  border-bottom: 1px solid var(--bg-soft);
   padding: 0 20px;
-  background: #f8fafc;
+  background: var(--bg-main);
 }
 .tab {
   padding: 12px 16px;
   border: none; background: transparent;
-  font-size: 13px; font-weight: 700; color: #94a3b8;
+  font-size: 13px; font-weight: 700; color: var(--text-light);
   cursor: pointer; border-bottom: 2px solid transparent;
   transition: all .15s; margin-bottom: -1px;
 }
-.tab.active { color: #6366f1; border-bottom-color: #6366f1; }
-.tab:hover:not(.active) { color: #1e293b; }
+.tab.active { color: var(--primary); border-bottom-color: var(--primary); }
+.tab:hover:not(.active) { color: var(--text-main); }
 
 /* Body */
 .drawer-body {
@@ -657,30 +740,30 @@ function formatDate(d) {
 }
 
 .field { display: flex; flex-direction: column; gap: 6px; }
-.field label { font-size: 12px; font-weight: 700; color: #64748b; }
+.field label { font-size: 12px; font-weight: 700; color: var(--text-muted); }
 .field input, .field select {
   padding: 9px 12px;
-  border: 1.5px solid #e2e8f0; border-radius: 9px;
-  font-size: 13.5px; color: #0f172a; background: #f8fafc;
+  border: 1.5px solid var(--border-strong); border-radius: 9px;
+  font-size: 13.5px; color: var(--text-main); background: var(--bg-main);
   transition: border-color .15s;
 }
 .field input:focus, .field select:focus {
-  outline: none; border-color: #6366f1; background: #fff;
-  box-shadow: 0 0 0 3px rgba(99,102,241,.1);
+  outline: none; border-color: var(--primary); background: #fff;
+  box-shadow: 0 0 0 3px var(--input-focus-ring);
 }
 .field-row { display: flex; gap: 12px; }
 .field-row .field { flex: 1; }
 
 .toggle-field {
   display: flex; align-items: center; justify-content: space-between;
-  padding: 9px 12px; border: 1.5px solid #e2e8f0; border-radius: 9px;
-  background: #f8fafc; font-size: 13.5px; color: #0f172a; font-weight: 600;
+  padding: 9px 12px; border: 1.5px solid var(--border-strong); border-radius: 9px;
+  background: var(--bg-main); font-size: 13.5px; color: var(--text-main); font-weight: 600;
 }
 .toggle { position: relative; display: inline-block; width: 38px; height: 21px; }
 .toggle input { display: none; }
 .slider {
   position: absolute; inset: 0;
-  background: #cbd5e1; border-radius: 21px; cursor: pointer; transition: .25s;
+  background: var(--border-strong); border-radius: 21px; cursor: pointer; transition: .25s;
 }
 .slider:before {
   content: ''; position: absolute;
@@ -688,13 +771,13 @@ function formatDate(d) {
   background: #fff; border-radius: 50%; transition: .25s;
   box-shadow: 0 1px 3px rgba(0,0,0,.2);
 }
-.toggle input:checked + .slider { background: #6366f1; }
+.toggle input:checked + .slider { background: var(--primary); }
 .toggle input:checked + .slider:before { transform: translateX(17px); }
 
 .meta-block {
   display: flex; align-items: center; justify-content: space-between;
-  font-size: 12px; color: #94a3b8;
-  padding: 8px 0; border-top: 1px solid #f1f5f9; margin-top: 4px;
+  font-size: 12px; color: var(--text-light);
+  padding: 8px 0; border-top: 1px solid var(--bg-soft); margin-top: 4px;
 }
 .meta-id { font-family: monospace; }
 
@@ -707,10 +790,10 @@ function formatDate(d) {
 
 .btn-primary {
   padding: 10px 20px;
-  background: linear-gradient(135deg, #6366f1, #3b82f6);
+  background: linear-gradient(135deg, var(--primary), var(--primary-light));
   color: #fff; border: none; border-radius: 9px;
   font-size: 13.5px; font-weight: 700; cursor: pointer;
-  box-shadow: 0 2px 8px rgba(99,102,241,.25);
+  box-shadow: 0 2px 8px var(--primary-glow);
   transition: opacity .15s;
 }
 .btn-primary:hover:not(:disabled) { opacity: .9; }
@@ -719,29 +802,29 @@ function formatDate(d) {
 /* Compte tab */
 .no-account-banner {
   display: flex; align-items: flex-start; gap: 12px;
-  padding: 16px; border: 1px solid #e2e8f0; border-radius: 12px;
-  background: #f8fafc; color: #475569;
+  padding: 16px; border: 1px solid var(--border-strong); border-radius: 12px;
+  background: var(--bg-main); color: var(--text-muted);
 }
-.no-account-banner svg { flex-shrink: 0; margin-top: 2px; color: #94a3b8; }
-.no-account-banner strong { font-size: 14px; color: #1e293b; display: block; margin-bottom: 4px; }
-.no-account-banner p { font-size: 12.5px; margin: 0; color: #64748b; }
+.no-account-banner svg { flex-shrink: 0; margin-top: 2px; color: var(--text-light); }
+.no-account-banner strong { font-size: 14px; color: var(--text-main); display: block; margin-bottom: 4px; }
+.no-account-banner p { font-size: 12.5px; margin: 0; color: var(--text-muted); }
 
 .account-section { display: flex; flex-direction: column; gap: 10px; }
 .section-label {
   font-size: 10.5px; font-weight: 800; text-transform: uppercase;
-  letter-spacing: .08em; color: #94a3b8; margin: 0;
+  letter-spacing: .08em; color: var(--text-light); margin: 0;
 }
-.section-desc { font-size: 12.5px; color: #64748b; margin: 0; line-height: 1.5; }
+.section-desc { font-size: 12.5px; color: var(--text-muted); margin: 0; line-height: 1.5; }
 
-.divider { height: 1px; background: #f1f5f9; margin: 4px 0; }
+.divider { height: 1px; background: var(--bg-soft); margin: 4px 0; }
 
 .btn-secondary {
-  padding: 9px 16px; border: 1.5px solid #e2e8f0;
-  border-radius: 9px; background: #fff; color: #475569;
+  padding: 9px 16px; border: 1.5px solid var(--border-strong);
+  border-radius: 9px; background: #fff; color: var(--text-muted);
   font-size: 13px; font-weight: 700; cursor: pointer; transition: all .15s;
   align-self: flex-start;
 }
-.btn-secondary:hover:not(:disabled) { background: #f1f5f9; border-color: #cbd5e1; color: #0f172a; }
+.btn-secondary:hover:not(:disabled) { background: var(--bg-soft); border-color: var(--border-strong); color: var(--text-main); }
 .btn-secondary:disabled { opacity: .5; cursor: not-allowed; }
 
 .btn-warning {
@@ -756,19 +839,19 @@ function formatDate(d) {
 
 .link-box {
   display: flex; align-items: center; gap: 8px;
-  background: #f8fafc; border: 1px solid #e2e8f0;
+  background: var(--bg-main); border: 1px solid var(--border-strong);
   border-radius: 8px; padding: 8px 10px;
   margin-top: 2px;
 }
 .link-text {
-  font-size: 11px; color: #475569; font-family: monospace;
+  font-size: 11px; color: var(--text-muted); font-family: monospace;
   flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   word-break: break-all;
 }
 .copy-btn {
   display: flex; align-items: center; gap: 4px;
   padding: 4px 10px;
-  background: #6366f1; color: #fff;
+  background: var(--primary); color: #fff;
   border: none; border-radius: 6px;
   font-size: 11.5px; font-weight: 700; cursor: pointer;
   white-space: nowrap; flex-shrink: 0;
@@ -777,98 +860,148 @@ function formatDate(d) {
 .copy-btn:hover { opacity: .85; }
 
 .account-meta {
-  background: #f8fafc; border: 1px solid #e2e8f0;
+  background: var(--bg-main); border: 1px solid var(--border-strong);
   border-radius: 10px; padding: 12px 14px;
   display: flex; flex-direction: column; gap: 8px;
 }
 .meta-row { display: flex; align-items: center; justify-content: space-between; }
-.meta-label { font-size: 12px; font-weight: 700; color: #94a3b8; }
-.meta-val { font-size: 13px; color: #475569; }
+.meta-label { font-size: 12px; font-weight: 700; color: var(--text-light); }
+.meta-val { font-size: 13px; color: var(--text-muted); }
 .mono { font-family: monospace; }
 
 /* ── Abonnement ── */
-.sub-loading { text-align: center; color: #94a3b8; padding: 32px; font-size: 13px; }
+.sub-loading { text-align: center; color: var(--text-light); padding: 32px; font-size: 13px; }
 
-.sub-hero {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 16px 18px; border-radius: 12px;
-  border: 1.5px solid #e2e8f0;
-  background: #f8fafc;
-}
-.sub-hero--active    { background: #f0fdf4; border-color: #86efac; }
-.sub-hero--trial     { background: #eef2ff; border-color: #a5b4fc; }
-.sub-hero--suspended { background: #fffbeb; border-color: #fde68a; }
-.sub-hero--cancelled { background: #fef2f2; border-color: #fca5a5; }
-
-.sub-hero-left { display: flex; align-items: center; gap: 12px; }
-.sub-status-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
-.sub-status-label { font-size: 14px; font-weight: 800; color: #0f172a; }
-.sub-paid-until { font-size: 12px; color: #64748b; margin-top: 2px; }
-.sub-paid-until.paid-expired { color: #dc2626; font-weight: 700; }
-.sub-paid-until.paid-warning { color: #d97706; font-weight: 700; }
-
-.btn-add-month {
-  display: flex; align-items: center; gap: 6px;
-  padding: 8px 14px; border-radius: 8px;
-  background: #0f172a; color: #fff; border: none;
-  font-size: 12.5px; font-weight: 700; cursor: pointer;
-  white-space: nowrap; flex-shrink: 0; transition: opacity .15s;
-}
-.btn-add-month:hover:not(:disabled) { opacity: .85; }
-.btn-add-month:disabled { opacity: .5; cursor: not-allowed; }
-
-.sub-form-card {
-  background: #f8fafc; border: 1px solid #e2e8f0;
-  border-radius: 12px; padding: 16px;
-  display: flex; flex-direction: column; gap: 12px;
-}
-.sub-form-card textarea {
-  padding: 9px 12px; border: 1.5px solid #e2e8f0; border-radius: 9px;
-  font-size: 13px; color: #0f172a; resize: vertical; font-family: inherit;
-  background: #fff; transition: border-color .15s;
-}
-.sub-form-card textarea:focus { outline: none; border-color: #6366f1; }
-
-.sub-payments-section { display: flex; flex-direction: column; gap: 10px; }
-.sub-payments-header { display: flex; align-items: center; justify-content: space-between; }
-
-.btn-add-pay {
-  display: flex; align-items: center; gap: 5px;
-  padding: 5px 12px; border: 1.5px solid #6366f1;
-  border-radius: 7px; background: #eef2ff; color: #4f46e5;
-  font-size: 12px; font-weight: 700; cursor: pointer; transition: all .12s;
-}
-.btn-add-pay:hover { background: #e0e7ff; }
-
-.pay-form {
-  background: #f8fafc; border: 1.5px solid #e2e8f0;
-  border-radius: 10px; padding: 12px;
+/* Hero */
+.sub-hero2 {
+  border: 1.5px solid; border-radius: 14px;
+  padding: 16px 18px;
   display: flex; flex-direction: column; gap: 10px;
 }
+.sub-hero2-top { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.sub-status-badge {
+  display: inline-flex; align-items: center;
+  padding: 3px 10px; border-radius: 999px;
+  font-size: 11px; font-weight: 800; color: #fff;
+  letter-spacing: .04em; white-space: nowrap;
+}
+.sub-expiry { font-size: 13px; font-weight: 600; color: var(--text-muted); }
+.expiry-ok      { color: #16a34a; }
+.expiry-warn    { color: #d97706; }
+.expiry-expired { color: #dc2626; font-weight: 700; }
+.sub-date-line  { font-size: 12px; color: var(--text-muted); }
 
-.pay-list { display: flex; flex-direction: column; gap: 6px; }
-.pay-row {
+/* Quick actions */
+.sub-quick-actions { display: flex; align-items: flex-start; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
+.qa-btn {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 6px 12px; border-radius: 8px; border: none;
+  font-size: 12px; font-weight: 700; cursor: pointer; transition: opacity .15s;
+  white-space: nowrap;
+}
+.qa-btn:hover { opacity: .85; }
+.qa-btn--purple { background: var(--primary-soft); color: var(--primary); }
+.qa-btn--gray   { background: var(--bg-soft); color: var(--text-muted); }
+.qa-btn--green  { background: #f0fdf4; color: #16a34a; }
+
+/* Trial picker */
+.trial-wrap { position: relative; }
+.trial-picker {
+  position: absolute; top: calc(100% + 6px); left: 0; z-index: 10;
+  background: #fff; border: 1.5px solid var(--border-strong); border-radius: 12px;
+  padding: 14px; min-width: 200px;
+  display: flex; flex-direction: column; gap: 10px;
+  box-shadow: 0 8px 24px rgba(0,0,0,.1);
+}
+.trial-picker-label { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; color: var(--text-light); }
+.trial-days-row { display: flex; gap: 6px; }
+.trial-day-btn {
+  flex: 1; padding: 6px 0;
+  border: 1.5px solid var(--border-strong); border-radius: 7px;
+  background: var(--bg-main); color: var(--text-muted);
+  font-size: 12px; font-weight: 700; cursor: pointer; transition: all .12s;
+}
+.trial-day-btn.active, .trial-day-btn:hover { background: var(--primary-soft); border-color: var(--primary-mid); color: var(--primary); }
+
+/* Paiement card */
+.pay-card {
+  background: var(--bg-main); border: 1.5px solid var(--border-strong);
+  border-radius: 14px; padding: 16px;
+  display: flex; flex-direction: column; gap: 12px;
+}
+.pay-card-title {
+  display: flex; align-items: center; gap: 7px;
+  font-size: 13px; font-weight: 800; color: var(--text-main);
+}
+.pay-card-row { display: flex; gap: 10px; }
+.pay-card-row .field { flex: 1; }
+
+.btn-pay-submit {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 11px 18px;
+  background: linear-gradient(135deg, var(--primary), var(--primary-light));
+  color: #fff; border: none; border-radius: 10px;
+  font-size: 13px; font-weight: 700; cursor: pointer;
+  box-shadow: 0 2px 8px var(--primary-glow);
+  transition: opacity .15s;
+}
+.btn-pay-submit:hover:not(:disabled) { opacity: .9; }
+.btn-pay-submit:disabled { opacity: .45; cursor: not-allowed; }
+
+/* Accordéon config */
+.config-accordion {
+  border: 1px solid var(--border-strong); border-radius: 12px;
+  overflow: hidden; background: #fff;
+}
+.config-accordion-trigger {
+  width: 100%; display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 16px; background: none; border: none;
+  font-size: 13px; font-weight: 700; color: var(--text-muted);
+  cursor: pointer; transition: background .12s;
+}
+.config-accordion-trigger:hover { background: var(--bg-main); }
+.config-accordion-body {
+  padding: 14px 16px 16px;
+  display: flex; flex-direction: column; gap: 12px;
+  border-top: 1px solid var(--bg-soft);
+}
+.config-accordion-body textarea {
+  padding: 9px 12px; border: 1.5px solid var(--border-strong); border-radius: 9px;
+  font-size: 13px; color: var(--text-main); resize: vertical; font-family: inherit;
+  background: var(--bg-main); transition: border-color .15s;
+}
+.config-accordion-body textarea:focus { outline: none; border-color: var(--primary); background: #fff; }
+
+/* Historique timeline */
+.pay-history { display: flex; flex-direction: column; gap: 10px; }
+.pay-history-header { display: flex; align-items: center; justify-content: space-between; }
+.pay-total { font-size: 12px; font-weight: 700; color: var(--primary); }
+
+.pay-timeline { display: flex; flex-direction: column; gap: 0; padding-left: 14px; border-left: 2px solid var(--border-strong); margin-left: 6px; }
+.pay-tl-row {
   display: flex; align-items: center; gap: 10px;
-  background: #fff; border: 1px solid #e2e8f0;
-  border-radius: 9px; padding: 10px 12px;
+  padding: 10px 0; position: relative;
 }
-.pay-icon {
-  width: 30px; height: 30px; border-radius: 8px;
-  background: #f1f5f9; color: #64748b;
-  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+.pay-tl-dot {
+  position: absolute; left: -19px; top: 50%; transform: translateY(-50%);
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--primary); border: 2px solid #fff;
+  box-shadow: 0 0 0 2px var(--primary);
+  flex-shrink: 0;
 }
-.pay-body { flex: 1; min-width: 0; }
-.pay-amount { font-size: 14px; font-weight: 800; color: #0f172a; }
-.pay-meta { font-size: 11.5px; color: #94a3b8; margin-top: 1px; }
+.pay-tl-body { flex: 1; min-width: 0; }
+.pay-tl-amount { font-size: 14px; font-weight: 800; color: var(--text-main); }
+.pay-tl-meta   { font-size: 11.5px; color: var(--text-light); margin-top: 1px; }
+
 .pay-delete {
-  width: 28px; height: 28px; border-radius: 7px;
+  width: 26px; height: 26px; border-radius: 6px;
   border: 1.5px solid #fca5a5; background: transparent;
   color: #dc2626; cursor: pointer; flex-shrink: 0;
   display: flex; align-items: center; justify-content: center;
   transition: all .12s;
 }
 .pay-delete:hover { background: #fee2e2; }
-.pay-empty { text-align: center; font-size: 12.5px; color: #94a3b8; padding: 20px; font-style: italic; }
+.pay-empty { text-align: center; font-size: 12.5px; color: var(--text-light); padding: 20px; font-style: italic; }
 
 /* ── Responsive ── */
 @media (max-width: 600px) {

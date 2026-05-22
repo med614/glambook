@@ -1,48 +1,38 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import BaseModal from '../modal/BaseModal.vue'
+import CustomSelect from '@/components/common/CustomSelect.vue'
 import { supabase } from '@/lib/supabase'
 import { fetchAllClients } from '../../services/clients.service'
 import { getOrgId } from '@/composables/useOrgId'
-import { fetchStaff } from '@/services/staff.service'
 import { fetchServices, fetchServiceCategories } from '@/services/services.service'
 import { formatPhone, isValidPhone } from '@/utils/phone'
+import { rankStaff } from '@/composables/useStaffRanking'
 
 const props = defineProps({
-  today: { type: String, default: '' }
+  today:        { type: String, default: '' },
+  staff:        { type: Array,  default: () => [] },
+  services:     { type: Array,  default: () => [] },
+  appointments: { type: Array,  default: () => [] }
 })
 const emit = defineEmits(['close', 'refresh'])
 
 // ── Données de base ──────────────────────────────────────────────────────────
-const staffOptions    = ref([])
 const serviceOptions  = ref([])
 const categoryOptions = ref([])
 const allClients      = ref([])
-const busyStaffIds    = ref(new Set())
-const loadedStaffIds  = ref(new Set())
+
+const staffOptions = computed(() => props.staff.filter(s => s.is_active !== false))
 
 onMounted(async () => {
-  const today = props.today || new Date().toLocaleDateString('en-CA')
-  const [staffRes, servicesRes, catsRes, clientsRes, { data: inProgress }, { data: scheduled }] = await Promise.all([
-    fetchStaff(),
+  const [servicesRes, catsRes, clientsRes] = await Promise.all([
     fetchServices(),
     fetchServiceCategories(),
-    fetchAllClients(),
-    supabase.from('appointments').select('appointment_services(staff_id)')
-      .eq('status', 'in_progress')
-      .gte('start_time', today + 'T00:00:00').lte('start_time', today + 'T23:59:59'),
-    supabase.from('appointments').select('appointment_services(staff_id)')
-      .in('status', ['scheduled', 'waiting'])
-      .gte('start_time', today + 'T00:00:00').lte('start_time', today + 'T23:59:59')
+    fetchAllClients()
   ])
-  staffOptions.value    = staffRes.filter(s => s.is_active)
   serviceOptions.value  = servicesRes.filter(s => s.is_active)
   categoryOptions.value = catsRes.filter(c => c.is_active)
   allClients.value      = clientsRes
-  const busyIds   = (inProgress || []).flatMap(a => (a.appointment_services || []).map(s => s.staff_id)).filter(Boolean)
-  const loadedIds = (scheduled  || []).flatMap(a => (a.appointment_services || []).map(s => s.staff_id)).filter(Boolean)
-  busyStaffIds.value   = new Set(busyIds)
-  loadedStaffIds.value = new Set(loadedIds)
 })
 
 // ── Client ───────────────────────────────────────────────────────────────────
@@ -108,36 +98,85 @@ const finalName = computed(() => {
 })
 
 // ── Lignes de prestations ────────────────────────────────────────────────────
-function newLine() { return { id: Date.now(), serviceId: null, staffId: null, staffOpen: false, price: null } }
+function newLine() { return { id: Date.now() + Math.random(), serviceId: null, staffId: null, price: null, isParallel: false } }
 const lines = ref([newLine()])
 
 function addLine()        { lines.value.push(newLine()) }
 function removeLine(id)   { if (lines.value.length > 1) lines.value = lines.value.filter(l => l.id !== id) }
 
-function staffGridFor(line) {
-  const svc   = serviceOptions.value.find(s => s.id === line.serviceId)
-  const catId = svc?.category_id
-  const enriched = staffOptions.value.map(s => {
-    const busy      = busyStaffIds.value.has(s.id)
-    const loaded    = !busy && loadedStaffIds.value.has(s.id)
-    const competent = !!(catId && s.categories?.some(c => c.id === catId))
-    return { ...s, busy, loaded, competent }
+// Auto-fill prix quand on change la prestation
+watch(() => lines.value.map(l => l.serviceId), (newIds, oldIds) => {
+  newIds.forEach((id, i) => {
+    if (id && id !== oldIds?.[i]) {
+      const svc = serviceOptions.value.find(s => s.id === id)
+      if (svc?.price != null) lines.value[i].price = svc.price
+    }
   })
-  const score = s => s.busy ? 2 : s.loaded ? 1 : 0
-  const competent = enriched.filter(s => s.competent).sort((a, b) => score(a) - score(b))
-  const others    = enriched.filter(s => !s.competent).sort((a, b) => score(a) - score(b))
-  return competent.length && others.length
-    ? [...competent, { id: '__sep__', _sep: true }, ...others]
-    : [...competent, ...others]
+})
+
+// ── Ranking staff (même logique que RdvModal / ServeWalkinModal) ─────────────
+function getRanked(serviceId) {
+  const now = new Date()
+  const targetTime = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`
+  const targetDate = now.toLocaleDateString('en-CA')
+  // Utiliser les services de Today.vue (source unique) pour le ranking
+  const rankingServices = props.services.length ? props.services : serviceOptions.value
+  return rankStaff({
+    staffList:    staffOptions.value,
+    serviceId,
+    services:     rankingServices,
+    targetDate,
+    targetTime,
+    appointments: props.appointments
+  })
 }
 
-function selectedStaffInfo(line) {
-  return staffGridFor(line).find(s => s.id === line.staffId) || null
+function staffOptionsFor(line) {
+  const ranked = getRanked(line.serviceId)
+  return [
+    { id: null, name: 'Non assigné' },
+    ...ranked.map(sm => ({
+      ...sm,
+      danger: sm._unavailable || undefined,
+      hint:   sm._unavailableReason || undefined,
+      badge:  sm._recommended ? 'Recommandé' : undefined
+    }))
+  ]
 }
 
-function toggleStaff(line) { line.staffOpen = !line.staffOpen }
-function closeStaff(line)  { line.staffOpen = false }
-function pickStaff(line, id) { line.staffId = id; line.staffOpen = false }
+// Force staff indisponible — même pattern que RdvModal
+const forceConfirm = ref({ show: false, lineId: null, staffId: null, prevStaffId: null, message: '' })
+
+watch(
+  () => lines.value.map(l => l.staffId),
+  (newIds, oldIds) => {
+    newIds.forEach((newId, i) => {
+      if (!newId || newId === oldIds?.[i]) return
+      const line = lines.value[i]
+      const sm = getRanked(line.serviceId).find(s => s.id === newId)
+      if (sm?._unavailable) {
+        forceConfirm.value = {
+          show: true,
+          lineId: line.id,
+          staffId: newId,
+          prevStaffId: oldIds?.[i] ?? null,
+          message: `${sm.name} est indisponible (${sm._unavailableReason}). Forcer quand même ?`
+        }
+      }
+    })
+  }
+)
+
+function confirmForce() {
+  forceConfirm.value = { show: false, lineId: null, staffId: null, prevStaffId: null, message: '' }
+}
+
+function cancelForce() {
+  const { lineId, prevStaffId } = forceConfirm.value
+  const line = lines.value.find(l => l.id === lineId)
+  if (line) line.staffId = prevStaffId
+  forceConfirm.value = { show: false, lineId: null, staffId: null, prevStaffId: null, message: '' }
+}
 
 // ── Soumission ───────────────────────────────────────────────────────────────
 const isLoading   = ref(false)
@@ -146,9 +185,9 @@ const showHeavyConfirm = ref(false)
 
 function getHeavyWarning() {
   for (const line of lines.value) {
+    if (!line.staffId) continue  // staff optionnel à l'ajout — pas d'avertissement si absent
     const svc = serviceOptions.value.find(s => s.id === line.serviceId)
     if (!svc?.is_heavy) continue
-    if (!line.staffId) return `"${svc.name}" est une prestation complexe — aucun collaborateur compétent n'est affecté.`
     const staff = staffOptions.value.find(s => s.id === line.staffId)
     if (!staff?.categories?.some(c => c.id === svc.category_id))
       return `"${svc.name}" est une prestation complexe — ${staff?.name || 'ce collaborateur'} n'a pas la compétence requise.`
@@ -156,9 +195,12 @@ function getHeavyWarning() {
   return ''
 }
 
+const missingService = computed(() => lines.value.some(l => l.staffId && !l.serviceId))
+
 const canSubmit = computed(() => {
   if (!finalName.value.length) return false
   if (newClientMode.value && phoneError.value) return false
+  if (missingService.value) return false
   return true
 })
 
@@ -176,8 +218,8 @@ async function doAdd() {
   try {
     const now = new Date()
     const startTime = props.today
-      ? props.today + 'T' + now.toTimeString().substring(0, 8)
-      : now.toLocaleDateString('en-CA') + 'T' + now.toTimeString().substring(0, 8)
+      ? (() => { const [y, mo, d] = props.today.split('-').map(Number); return new Date(y, mo - 1, d, now.getHours(), now.getMinutes(), now.getSeconds()).toISOString() })()
+      : new Date().toISOString()
 
     // ── Résoudre client_id ──────────────────────────────────────────
     let clientId = selectedClientId.value
@@ -201,10 +243,14 @@ async function doAdd() {
     const firstLine = lines.value[0]
     const isQuickName = !clientId  // saisie rapide sans fiche
 
+    // Si au moins une prestation est déjà assignée à un staff, l'appointment
+    // passe directement en in_progress (sinon waiting = en attente dans la file)
+    const hasAssignedStaff = lines.value.some(l => l.serviceId && l.staffId)
+
     const apptPayload = {
       organization_id: await getOrgId(),
       type:   'walkin',
-      status: 'waiting',
+      status: hasAssignedStaff ? 'in_progress' : 'waiting',
       start_time: startTime,
       client_id:   clientId || null,
       walkin_name: isQuickName ? finalName.value : null
@@ -217,16 +263,24 @@ async function doAdd() {
       .single()
     if (apptErr) throw apptErr
 
-    // ── Lier les prestations ────────────────────────────────────────
+    // ── Lier les prestations avec start_time en cascade ─────────────
     const allLines = lines.value.filter(l => l.serviceId)
     if (allLines.length) {
+      let runningTime = new Date(startTime)
       const { error: svcErr } = await supabase.from('appointment_services').insert(
-        allLines.map(l => ({
-          appointment_id:   appt.id,
-          service_id:       l.serviceId,
-          staff_id:         l.staffId || null,
-          price_at_booking: l.price != null && l.price !== '' ? Number(l.price) : null
-        }))
+        allLines.map(l => {
+          const svcDef   = serviceOptions.value.find(s => s.id === l.serviceId)
+          const svcStart = runningTime.toISOString()
+          if (!l.isParallel) runningTime = new Date(runningTime.getTime() + (svcDef?.duration_minutes || 0) * 60000)
+          return {
+            appointment_id:   appt.id,
+            service_id:       l.serviceId,
+            staff_id:         l.staffId || null,
+            price_at_booking: l.price != null && l.price !== '' ? Number(l.price) : null,
+            is_parallel:      l.isParallel || false,
+            start_time:       svcStart
+          }
+        })
       )
       if (svcErr) throw svcErr
     }
@@ -243,8 +297,7 @@ async function doAdd() {
 </script>
 
 <template>
-  <BaseModal @close="$emit('close')">
-    <header class="modal-title">Nouveau sans RDV</header>
+  <BaseModal title="Nouveau sans RDV" @close="$emit('close')">
 
     <div class="modal-body">
 
@@ -329,54 +382,45 @@ async function doAdd() {
         <label>Prestations</label>
 
         <div class="lines-list">
-          <div v-for="(line, idx) in lines" :key="line.id" class="line-row">
-            <div class="line-num">{{ idx + 1 }}</div>
-
-            <!-- Service -->
-            <select class="line-select" v-model="line.serviceId" @change="line.price = serviceOptions.find(s => s.id === line.serviceId)?.price ?? null">
-              <option :value="null">Prestation (optionnel)</option>
-              <option v-for="s in serviceOptions" :key="s.id" :value="s.id">{{ s.name }}</option>
-            </select>
-
-            <!-- Staff -->
-            <div class="staff-select" :class="{ open: line.staffOpen }">
-              <button type="button" class="staff-trigger" @click="toggleStaff(line)">
-                <template v-if="line.staffId">
-                  <span class="avail-dot" :class="selectedStaffInfo(line)?.busy ? 'dot-busy' : selectedStaffInfo(line)?.loaded ? 'dot-loaded' : 'dot-free'"></span>
-                  <span class="trigger-name">{{ selectedStaffInfo(line)?.name }}</span>
-                </template>
-                <span v-else class="trigger-placeholder">Collaborateur</span>
-                <svg class="trigger-chevron" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+          <div v-for="(line, idx) in lines" :key="line.id" class="line-card">
+            <!-- Haut : numéro + service + supprimer -->
+            <div class="line-top">
+              <span class="line-num">{{ idx + 1 }}</span>
+              <CustomSelect
+                v-model="line.serviceId"
+                :options="[{ id: null, name: 'Prestation (optionnel)' }, ...serviceOptions]"
+                placeholder="Prestation…"
+                :iconType="'none'"
+                class="field-service"
+              />
+              <button v-if="lines.length > 1" type="button" class="remove-line-btn" @click="removeLine(line.id)" title="Supprimer">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
               </button>
-              <div v-if="line.staffOpen" class="staff-dropdown" @mouseleave="closeStaff(line)">
-                <button type="button" class="staff-option" @click="pickStaff(line, null)">
-                  <span style="color:var(--text-muted);font-size:13px">Premier disponible</span>
-                </button>
-                <div class="staff-sep"></div>
-                <template v-for="s in staffGridFor(line)" :key="s.id">
-                  <div v-if="s._sep" class="staff-sep-label">Autres</div>
-                  <button v-else type="button" class="staff-option" :class="{ 'opt-selected': line.staffId === s.id }" @click="pickStaff(line, s.id)">
-                    <span class="avail-dot" :class="s.busy ? 'dot-busy' : s.loaded ? 'dot-loaded' : 'dot-free'"></span>
-                    <span class="option-name">{{ s.name }}</span>
-                    <svg v-if="line.staffId === s.id" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" style="margin-left:auto;flex-shrink:0;color:var(--primary)"><polyline points="20 6 9 17 4 12"/></svg>
-                  </button>
-                </template>
+              <div v-else class="remove-placeholder"></div>
+            </div>
+            <!-- Bas : staff + prix + toggle parallèle -->
+            <div class="line-bottom">
+              <CustomSelect
+                v-model="line.staffId"
+                :options="staffOptionsFor(line)"
+                placeholder="Collaborateur"
+                :iconType="'none'"
+                :disabled="!line.serviceId"
+                class="field-staff"
+              />
+              <div class="price-wrap">
+                <input v-model="line.price" type="number" min="0" step="1" placeholder="—" class="price-input" />
+                <span class="price-suffix">DH</span>
               </div>
+              <label v-if="lines.length > 1" class="parallel-toggle" :title="line.isParallel ? 'Simultané avec la précédente' : 'Séquentiel'">
+                <input type="checkbox" v-model="line.isParallel" />
+                <span>⟺</span>
+              </label>
             </div>
-
-            <!-- Prix -->
-            <div class="price-inline-wrap">
-              <input v-model="line.price" type="number" min="0" step="1" placeholder="—" class="price-inline-input" />
-              <span class="price-inline-suffix">DH</span>
-            </div>
-
-            <!-- Supprimer -->
-            <button v-if="lines.length > 1" type="button" class="remove-line-btn" @click="removeLine(line.id)" title="Supprimer">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-            </button>
-            <div v-else style="width:28px;flex-shrink:0"></div>
           </div>
         </div>
+
+        <p v-if="missingService" class="form-error" style="margin:4px 0 0">Une prestation est requise pour chaque collaborateur sélectionné.</p>
 
         <button type="button" class="add-line-btn" @click="addLine">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
@@ -393,11 +437,24 @@ async function doAdd() {
       </button>
     </div>
 
-    <!-- Confirmation service complexe -->
-    <BaseModal v-if="showHeavyConfirm" @close="showHeavyConfirm = false">
-      <header class="modal-title">Prestation complexe</header>
+    <!-- Confirmation force staff indisponible -->
+    <BaseModal title="Collaborateur indisponible" v-if="forceConfirm.show" @close="cancelForce">
       <div class="modal-body">
-        <div class="heavy-alert">
+        <div class="warn-box">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          {{ forceConfirm.message }}
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-secondary" @click="cancelForce">Annuler</button>
+        <button class="btn btn-primary" @click="confirmForce">Forcer quand même</button>
+      </div>
+    </BaseModal>
+
+    <!-- Confirmation service complexe -->
+    <BaseModal title="Prestation complexe" v-if="showHeavyConfirm" @close="showHeavyConfirm = false">
+      <div class="modal-body">
+        <div class="warn-box">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
           {{ heavyAlert }}
         </div>
@@ -412,61 +469,96 @@ async function doAdd() {
 </template>
 
 <style scoped>
-/* ── Client ── */
+/* ── Client search ── */
 .client-search-area { display: flex; flex-direction: column; gap: 8px; }
 .search-row { display: flex; gap: 8px; align-items: center; position: relative; }
+
 .new-client-icon-btn {
   flex-shrink: 0; width: 38px; height: 38px;
-  border: 1.5px solid var(--primary); border-radius: 9px;
+  border: 1px solid var(--primary); border-radius: 9px;
   background: var(--primary-soft); color: var(--primary);
   display: flex; align-items: center; justify-content: center;
   cursor: pointer; transition: all .15s;
 }
-.new-client-icon-btn:hover { background: var(--primary); color: #fff; }
+.new-client-icon-btn:hover { background: var(--primary-mid); }
+
 .quick-name-input {
-  width: 100%; padding: 9px 12px; border: 1.5px dashed var(--border);
-  border-radius: 9px; font-size: 13px; background: #f8fafc; color: var(--text-muted);
+  width: 100%; padding: 9px 12px;
+  border: 1.5px dashed var(--border-strong); border-radius: 9px;
+  font-size: 13px; font-family: inherit;
+  background: var(--input-bg); color: var(--text-muted);
+  transition: border-color .15s, color .15s;
 }
 .quick-name-input:focus { outline: none; border-color: var(--primary); border-style: solid; color: var(--text-main); }
-.search-input-wrap  { position: relative; width: 100%; }
-.search-input-icon  { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--text-muted); pointer-events: none; }
-.search-input-wrap input { width: 100%; padding: 9px 12px 9px 32px; border: 1.5px solid var(--border); border-radius: 9px; font-size: 13.5px; background: #f8fafc; }
-.search-input-wrap input:focus { outline: none; border-color: var(--primary); background: #fff; }
+.quick-name-input::placeholder { color: var(--input-placeholder); }
+
+.search-input-wrap { position: relative; width: 100%; }
+.search-input-icon { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--text-muted); pointer-events: none; }
+.search-input-wrap input {
+  width: 100%; padding: 9px 12px 9px 32px;
+  border: 1px solid var(--input-border); border-radius: 9px;
+  font-size: 13.5px; font-family: inherit;
+  background: var(--input-bg); color: var(--input-text);
+}
+.search-input-wrap input::placeholder { color: var(--input-placeholder); }
+.search-input-wrap input:focus { outline: none; border-color: var(--primary); }
 
 .client-dropdown {
   position: absolute; top: calc(100% + 4px); left: 0; right: 46px;
-  background: #fff; border: 1px solid #1e293b; border-radius: 10px;
-  box-shadow: 0 10px 25px rgba(0,0,0,.12); z-index: 9999; overflow: hidden;
+  background: var(--bg-card); border: 1px solid var(--border-strong); border-radius: 10px;
+  box-shadow: var(--shadow-lg); z-index: 9999; overflow: hidden;
 }
-.client-option { display: flex; align-items: center; gap: 10px; padding: 10px 14px; cursor: pointer; transition: background .12s; border-bottom: 1px solid var(--border); }
+.client-option {
+  display: flex; align-items: center; gap: 10px; padding: 10px 14px;
+  cursor: pointer; transition: background .12s;
+  border-bottom: 1px solid var(--border);
+}
 .client-option:last-child { border-bottom: none; }
-.client-option:hover { background: var(--bg-main); }
-.option-avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--primary-soft); color: var(--primary-text); font-size: 13px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-.option-avatar.avatar-flagged { background: #fef3c7; color: #b45309; }
+.client-option:hover { background: var(--bg-soft); }
+.option-avatar {
+  width: 32px; height: 32px; border-radius: 50%;
+  background: var(--primary-soft); color: var(--primary);
+  font-size: 13px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.option-avatar.avatar-flagged { background: var(--orange-soft); color: var(--orange); }
 .option-name  { font-size: 13.5px; font-weight: 600; color: var(--text-main); }
 .option-phone { font-size: 11.5px; color: var(--text-muted); }
-.flag-badge { font-size: 10px; font-weight: 700; background: #fef3c7; color: #b45309; border: 1px solid #fcd34d; border-radius: 999px; padding: 1px 6px; white-space: nowrap; flex-shrink: 0; }
+.flag-badge {
+  font-size: 10px; font-weight: 700;
+  background: var(--orange-soft); color: var(--orange);
+  border: 1px solid rgba(217,119,6,.3); border-radius: 999px;
+  padding: 1px 6px; white-space: nowrap; flex-shrink: 0;
+}
 
-.selected-client { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; background: var(--primary-soft); border: 1px solid var(--primary); border-radius: 8px; }
-.selected-client.selected-flagged { background: #fffbeb; border-color: #fcd34d; }
+/* ── Client sélectionné ── */
+.selected-client {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 14px;
+  background: var(--primary-soft); border: 1px solid rgba(168,129,10,.3);
+  border-radius: 10px;
+}
+.selected-client.selected-flagged { background: var(--orange-soft); border-color: rgba(217,119,6,.3); }
 .selected-client-info { display: flex; align-items: center; gap: 10px; }
-.selected-avatar { width: 36px; height: 36px; border-radius: 50%; background: var(--primary); color: #fff; font-size: 15px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-.selected-avatar.avatar-flagged { background: #f59e0b; }
+.selected-avatar {
+  width: 36px; height: 36px; border-radius: 50%;
+  background: var(--primary-mid); color: var(--primary);
+  font-size: 15px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.selected-avatar.avatar-flagged { background: var(--orange-soft); color: var(--orange); }
 .selected-name  { font-size: 14px; font-weight: 700; color: var(--text-main); }
 .selected-phone { font-size: 12px; color: var(--text-muted); margin-top: 1px; }
-.clear-btn { background: transparent; border: none; cursor: pointer; color: var(--text-muted); padding: 4px; border-radius: 4px; display: flex; align-items: center; }
+.clear-btn {
+  background: transparent; border: none; cursor: pointer;
+  color: var(--text-light); padding: 4px; border-radius: 4px;
+  display: flex; align-items: center; transition: color .12s;
+}
 .clear-btn:hover { color: var(--text-main); }
 
-.new-client-btn {
-  display: flex; align-items: center; gap: 6px; width: 100%;
-  padding: 9px 12px; border: 1.5px dashed var(--border); border-radius: 9px;
-  background: transparent; font-size: 13px; font-weight: 600; color: var(--text-muted);
-  cursor: pointer; transition: all .12s;
-}
-.new-client-btn:hover { border-color: var(--primary); color: var(--primary); background: #eff6ff; }
-
+/* ── Nouveau client form ── */
 .new-client-form {
-  border: 1.5px solid var(--primary); border-radius: 10px;
+  border: 1px solid rgba(168,129,10,.35); border-radius: 10px;
   background: var(--primary-soft); overflow: hidden;
 }
 .new-client-header {
@@ -476,69 +568,98 @@ async function doAdd() {
 .new-client-title { font-size: 12.5px; font-weight: 700; color: var(--primary); }
 .new-client-fields { display: flex; flex-direction: column; gap: 6px; padding: 10px 12px; }
 .nc-input {
-  width: 100%; padding: 8px 11px; border: 1.5px solid var(--border); border-radius: 8px;
-  font-size: 13px; background: #fff;
+  width: 100%; padding: 8px 11px;
+  border: 1px solid var(--input-border); border-radius: 8px;
+  font-size: 13px; font-family: inherit;
+  background: var(--input-bg); color: var(--input-text);
+  transition: border-color .15s;
 }
+.nc-input::placeholder { color: var(--input-placeholder); }
 .nc-input:focus { outline: none; border-color: var(--primary); }
-.nc-input-error { border-color: #dc2626 !important; }
-.nc-error { font-size: 11.5px; color: #dc2626; margin-top: 3px; display: block; }
+.nc-input-error { border-color: var(--red) !important; }
+.nc-error { font-size: 11.5px; color: var(--red); margin-top: 3px; display: block; }
 
 /* ── Lignes de prestations ── */
 .lines-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 8px; }
 
-.line-row { display: flex; align-items: center; gap: 8px; }
-
-.line-num { width: 22px; height: 22px; border-radius: 50%; background: var(--primary-soft); color: var(--primary-text); font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-
-.line-select {
-  flex: 1; min-width: 0;
-  padding: 8px 10px; border: 1.5px solid var(--border); border-radius: 9px;
-  font-size: 13px; background: #f8fafc; color: var(--text-main);
-  cursor: pointer;
+.line-card {
+  background: var(--bg-soft);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 10px 12px;
+  display: flex; flex-direction: column; gap: 8px;
 }
-.line-select:focus { outline: none; border-color: var(--primary); }
 
-.price-inline-wrap { position: relative; width: 80px; flex-shrink: 0; }
-.price-inline-input { width: 100%; padding: 7px 26px 7px 8px; border: 1.5px solid var(--border); border-radius: 9px; font-size: 12.5px; font-family: inherit; color: var(--text-main); background: #f8fafc; box-sizing: border-box; }
-.price-inline-input:focus { outline: none; border-color: var(--primary); }
-.price-inline-suffix { position: absolute; right: 7px; top: 50%; transform: translateY(-50%); font-size: 10px; color: var(--text-muted); pointer-events: none; font-weight: 700; }
-
-.remove-line-btn { width: 28px; height: 28px; flex-shrink: 0; border: 1.5px solid #fca5a5; background: transparent; border-radius: 7px; color: #dc2626; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all .12s; }
-.remove-line-btn:hover { background: #fee2e2; }
-
-.add-line-btn { display: flex; align-items: center; gap: 6px; border: 1.5px dashed var(--border); background: transparent; border-radius: 9px; padding: 8px 14px; font-size: 13px; font-weight: 600; color: var(--text-muted); cursor: pointer; width: 100%; transition: all .12s; }
-.add-line-btn:hover { border-color: var(--primary); color: var(--primary); background: #eff6ff; }
-
-/* ── Staff dropdown (par ligne) ── */
-.staff-select { position: relative; flex: 1; min-width: 0; }
-
-.staff-trigger { display: flex; align-items: center; gap: 7px; width: 100%; padding: 8px 10px; border: 1.5px solid var(--border); border-radius: 9px; background: #f8fafc; cursor: pointer; font-size: 13px; text-align: left; transition: border-color .15s; }
-.staff-trigger:hover, .staff-select.open .staff-trigger { border-color: var(--primary); background: #fff; }
-.trigger-name        { flex: 1; font-weight: 600; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.trigger-placeholder { flex: 1; color: var(--text-muted); }
-.trigger-chevron { flex-shrink: 0; color: var(--text-muted); transition: transform .2s; }
-.staff-select.open .trigger-chevron { transform: rotate(180deg); }
-
-.staff-dropdown { position: absolute; top: calc(100% + 4px); left: 0; right: 0; background: #fff; border: 1.5px solid var(--border); border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,.1); z-index: 200; overflow: hidden; max-height: 220px; overflow-y: auto; }
-.staff-sep       { height: 1px; background: var(--border); margin: 2px 0; }
-.staff-sep-label { padding: 4px 12px; font-size: 11px; font-weight: 600; color: var(--text-muted); background: var(--bg-main); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); letter-spacing: .04em; text-transform: uppercase; }
-.staff-option { display: flex; align-items: center; gap: 8px; width: 100%; padding: 8px 12px; border: none; background: transparent; cursor: pointer; text-align: left; transition: background .1s; }
-.staff-option:hover { background: #f8fafc; }
-.staff-option.opt-selected { background: #eff6ff; }
-.option-name { flex: 1; font-size: 13px; font-weight: 600; color: var(--text-main); }
-
-.avail-dot  { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-.dot-free   { background: #22c55e; }
-.dot-loaded { background: #f59e0b; }
-.dot-busy   { background: #3b82f6; }
-
-.heavy-alert {
-  display: flex; align-items: flex-start; gap: 9px;
-  background: #fffbeb; border: 1.5px solid #fbbf24;
-  border-radius: 10px; padding: 11px 14px;
-  font-size: 13px; font-weight: 600; color: #92400e;
-  margin: 4px 0;
+.line-top {
+  display: grid; grid-template-columns: 22px 1fr 28px;
+  align-items: center; gap: 8px;
 }
-.heavy-alert svg { flex-shrink: 0; margin-top: 1px; color: #f59e0b; }
-.confirm-hint { font-size: 13px; color: var(--text-muted); margin-top: 10px; line-height: 1.5; }
+.line-bottom {
+  display: grid; grid-template-columns: 1fr 110px auto;
+  align-items: center; gap: 8px;
+  padding-left: 30px;
+}
+
+.line-num {
+  width: 22px; height: 22px; border-radius: 50%;
+  background: var(--primary-soft); color: var(--primary);
+  font-size: 11px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.remove-placeholder { width: 28px; flex-shrink: 0; }
+.field-service { min-width: 0; }
+.field-staff   { min-width: 0; }
+
+.price-wrap {
+  position: relative; display: flex; align-items: center;
+}
+.price-input {
+  width: 100%; padding: 8px 28px 8px 10px;
+  border: 1px solid var(--input-border); border-radius: 8px;
+  font-size: 13px; font-family: inherit; font-weight: 600;
+  background: var(--input-bg); color: var(--input-text);
+  transition: border-color .15s;
+  -moz-appearance: textfield;
+}
+.price-input::-webkit-inner-spin-button,
+.price-input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+.price-input:focus { outline: none; border-color: var(--primary); }
+.price-suffix {
+  position: absolute; right: 9px;
+  font-size: 10.5px; font-weight: 700;
+  color: var(--text-muted); pointer-events: none;
+  user-select: none;
+}
+
+/* ── Parallel toggle ── */
+.parallel-toggle {
+  display: flex; align-items: center; justify-content: center;
+  width: 28px; height: 28px; cursor: pointer; flex-shrink: 0;
+  border: 1px solid var(--border); border-radius: 6px;
+  font-size: 13px; color: var(--text-muted); transition: all .12s; user-select: none;
+}
+.parallel-toggle:has(input:checked) { border-color: var(--blue); background: var(--blue-soft); color: var(--blue); }
+.parallel-toggle input { display: none; }
+
+/* ── Buttons ── */
+.remove-line-btn {
+  width: 28px; height: 28px; flex-shrink: 0;
+  border: 1px solid rgba(220,38,38,.25); background: transparent;
+  border-radius: 7px; color: var(--red);
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: all .12s;
+}
+.remove-line-btn:hover { background: var(--red-soft); }
+
+.add-line-btn {
+  display: flex; align-items: center; gap: 6px;
+  border: 1.5px dashed var(--border-strong); background: transparent;
+  border-radius: 10px; padding: 9px 14px;
+  font-size: 13px; font-weight: 600; color: var(--text-muted);
+  cursor: pointer; width: 100%; transition: all .12s; font-family: inherit;
+}
+.add-line-btn:hover { border-color: var(--primary); color: var(--primary); background: var(--primary-soft); }
+
+.confirm-hint { font-size: 13px; color: var(--text-muted); line-height: 1.5; }
 </style>
+

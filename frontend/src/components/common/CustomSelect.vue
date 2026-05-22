@@ -42,23 +42,22 @@ function updateDropdownPosition() {
   const spaceAbove = rect.top
   const maxH = 260
 
+  const dropW = Math.max(rect.width, 220)
   if (spaceBelow >= maxH || spaceBelow >= spaceAbove) {
-    // Ouvrir vers le bas
     dropdownStyle.value = {
       position: 'fixed',
       top: rect.bottom + 4 + 'px',
       left: rect.left + 'px',
-      width: rect.width + 'px',
+      width: dropW + 'px',
       maxHeight: Math.min(maxH, spaceBelow - 8) + 'px',
       zIndex: 9999
     }
   } else {
-    // Ouvrir vers le haut
     dropdownStyle.value = {
       position: 'fixed',
       bottom: window.innerHeight - rect.top + 4 + 'px',
       left: rect.left + 'px',
-      width: rect.width + 'px',
+      width: dropW + 'px',
       maxHeight: Math.min(maxH, spaceAbove - 8) + 'px',
       zIndex: 9999
     }
@@ -73,10 +72,12 @@ const normalizedOptions = computed(() => {
         value: opt[props.valueKey] !== undefined ? opt[props.valueKey] : opt.value,
         label: opt[props.labelKey] !== undefined ? opt[props.labelKey] : opt.label,
         disabled: !!opt.disabled,
-        hint: opt.hint || null
+        hint:   opt.hint   || null,
+        badge:  opt.badge  || null,
+        danger: !!opt.danger
       }
     }
-    return { value: opt, label: opt, disabled: false, hint: null }
+    return { value: opt, label: opt, disabled: false, hint: null, badge: null, danger: false }
   })
 })
 
@@ -144,11 +145,12 @@ onUnmounted(() => {
             v-for="opt in normalizedOptions"
             :key="opt.value"
             class="option-item"
-            :class="{ 'active': String(opt.value) === String(modelValue), 'option-disabled': opt.disabled }"
+            :class="{ 'active': String(opt.value) === String(modelValue), 'option-disabled': opt.disabled, 'option-danger': opt.danger }"
             @click="select(opt.value, opt.disabled)"
           >
-            <span class="option-text">{{ opt.label }}</span>
+            <span class="option-text" style="flex:1;overflow:hidden;text-overflow:ellipsis">{{ opt.label }}</span>
             <span v-if="opt.hint" class="option-hint">{{ opt.hint }}</span>
+            <span v-else-if="opt.badge" class="option-badge">{{ opt.badge }}</span>
             <svg v-else-if="String(opt.value) === String(modelValue)" class="icon-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
               <path d="M20 6L9 17l-5-5" />
             </svg>
@@ -176,24 +178,24 @@ onUnmounted(() => {
   justify-content: space-between;
   height: 42px;
   padding: 0 12px;
-  background: #fff;
-  border: 1px solid var(--border-soft);
+  background: var(--input-bg);
+  border: 1px solid var(--input-border);
   border-radius: 10px;
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
 .trigger:hover {
-  border-color: #cbd5e1;
+  border-color: var(--border-strong);
 }
 
 .trigger.is-open {
-  border-color: var(--accent-teal);
-  box-shadow: 0 0 0 3px rgba(74, 144, 164, 0.1);
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-glow);
 }
 
 .trigger.is-disabled {
-    background: #f8fafc;
+    background: var(--bg-soft);
     cursor: not-allowed;
     opacity: 0.7;
 }
@@ -208,7 +210,7 @@ onUnmounted(() => {
 .icon-funnel {
   width: 16px;
   height: 16px;
-  color: #94a3b8;
+  color: var(--text-light);
   flex-shrink: 0;
 }
 
@@ -228,7 +230,7 @@ onUnmounted(() => {
 .icon-chevron {
   width: 12px;
   height: 12px;
-  color: #94a3b8;
+  color: var(--text-light);
   transition: transform 0.2s;
   flex-shrink: 0;
 }
@@ -239,8 +241,8 @@ onUnmounted(() => {
 
 /* DROPDOWN */
 .dropdown {
-  background: #fff;
-  border: 1px solid #1e293b;
+  background: var(--bg-card);
+  border: 1px solid var(--border-strong);
   border-radius: 8px;
   box-shadow: 0 10px 25px rgba(0,0,0,0.15);
   padding: 4px;
@@ -257,13 +259,15 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 10px 12px;
-  font-size: 13.5px;
+  gap: 8px;
+  padding: 9px 12px;
+  font-size: 13px;
   color: var(--text-main);
   border-radius: 5px;
   cursor: pointer;
   transition: all 0.15s;
   margin-bottom: 2px;
+  white-space: nowrap;
 }
 
 .option-item:last-child {
@@ -279,39 +283,60 @@ onUnmounted(() => {
   background: transparent !important;
 }
 
+.option-danger {
+  color: var(--red);
+  background: var(--red-soft);
+}
+.option-danger:hover {
+  background: var(--red-soft) !important;
+  color: var(--red);
+}
+
 .option-hint {
   font-size: 10.5px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: #dc2626;
-  background: #fee2e2;
+  color: var(--red);
+  background: var(--red-soft);
+  padding: 2px 6px;
+  border-radius: 999px;
+  flex-shrink: 0;
+}
+
+.option-badge {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--green);
+  background: var(--green-soft);
+  border: 1px solid var(--green);
   padding: 2px 6px;
   border-radius: 999px;
   flex-shrink: 0;
 }
 
 .option-item:hover {
-  background: #D9A758; /* Gold on hover */
-  color: #1e293b;
+  background: var(--primary-soft);
+  color: var(--primary);
 }
 
-/* GOLD ACTIVE STATE */
 .option-item.active {
-  background: #D9A758; /* Exact Gold */
-  color: #1e293b; /* Dark text like in image */
+  background: var(--primary-soft);
+  color: var(--primary);
   font-weight: 600;
 }
 
 .icon-check {
   width: 14px;
   height: 14px;
-  color: #475569; /* Slate 600 */
+  color: var(--text-muted);
   flex-shrink: 0;
 }
 
 .option-item.active .icon-check {
-    color: #1e293b;
+    color: var(--primary);
 }
 
 .empty-state {
@@ -323,7 +348,7 @@ onUnmounted(() => {
 
 /* Scrollbar */
 .options-list::-webkit-scrollbar { width: 4px; }
-.options-list::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+.options-list::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 10px; }
 
 /* Transitions */
 .pop-enter-active, .pop-leave-active {

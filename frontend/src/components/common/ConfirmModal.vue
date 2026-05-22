@@ -71,17 +71,13 @@ defineEmits(['close', 'confirm'])
   gap: 12px;
 }
 
-.icon-trash {
-  color: #ef4444;
-}
+.icon-trash { color: var(--red); }
 
-.danger-title {
-  color: #ef4444 !important;
-}
+.danger-title { color: var(--red) !important; }
 
 .confirm-message {
   font-size: 14.5px;
-  color: #475569; /* Slate 600 */
+  color: var(--text-muted);
   line-height: 1.6;
   margin-top: -8px;
 }
@@ -93,17 +89,16 @@ defineEmits(['close', 'confirm'])
   margin-top: 24px;
 }
 
-/* CUSTOM BUTTON STYLES FOR THE MODAL */
 .btn-cancel {
-  background: #fff;
-  border: 1px solid #e2e8f0;
-  color: #1e293b;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  color: var(--text-main);
   box-shadow: 0 1px 2px rgba(0,0,0,0.05);
 }
 
 .btn-cancel:hover {
-  background: #f8fafc;
-  border-color: #cbd5e1;
+  background: var(--bg-soft);
+  border-color: var(--border-strong);
 }
 
 .btn-confirm-action {
@@ -113,19 +108,9 @@ defineEmits(['close', 'confirm'])
   font-weight: 600;
 }
 
-.btn-danger-solid {
-  background: #ef4444;
-}
+.btn-danger-solid { background: var(--red); }
+.btn-danger-solid:hover { background: var(--red-dark, #b91c1c); }
 
-.btn-danger-solid:hover {
-  background: #dc2626;
-}
-
-.btn-primary-solid {
-  background: var(--accent-teal);
-}
-
-.btn-primary-solid:hover {
-  background: #3d7e91;
-}
+.btn-primary-solid { background: var(--primary); }
+.btn-primary-solid:hover { background: var(--primary-dark); }
 </style>

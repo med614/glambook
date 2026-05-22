@@ -11,7 +11,7 @@ import { supabase } from '@/lib/supabase'
 const planningMode = ref(false)
 const showStaffPicker = ref(false)
 const planningSubView = ref('list') // 'list' | 'calendar'
-const planningMonth = ref(new Date().toISOString().slice(0, 7)) // 'YYYY-MM'
+const planningMonth = ref(new Date().toLocaleDateString('en-CA').slice(0, 7)) // 'YYYY-MM'
 
 const STAFF_COLORS = ['#6366f1','#f59e0b','#10b981','#ef4444','#3b82f6','#ec4899','#8b5cf6','#14b8a6']
 
@@ -54,12 +54,12 @@ function isAbsentOnDay(absence, day) {
 function prevMonth() {
   const [y, m] = planningMonth.value.split('-').map(Number)
   const d = new Date(y, m - 2, 1)
-  planningMonth.value = d.toISOString().slice(0, 7)
+  planningMonth.value = d.toLocaleDateString('en-CA').slice(0, 7)
 }
 function nextMonth() {
   const [y, m] = planningMonth.value.split('-').map(Number)
   const d = new Date(y, m, 1)
-  planningMonth.value = d.toISOString().slice(0, 7)
+  planningMonth.value = d.toLocaleDateString('en-CA').slice(0, 7)
 }
 function monthLabel() {
   const [y, m] = planningMonth.value.split('-').map(Number)
@@ -289,8 +289,8 @@ onMounted(load)
                 </span>
               </td>
               <td>
-                <span v-if="a.start_date <= new Date().toLocaleDateString('en-CA') && a.end_date >= new Date().toLocaleDateString('en-CA')" style="font-size:11px;font-weight:700;text-transform:uppercase;padding:3px 8px;border-radius:6px;background:#dcfce7;color:#166534;">En cours</span>
-                <span v-else style="font-size:11px;font-weight:700;text-transform:uppercase;padding:3px 8px;border-radius:6px;background:#f1f5f9;color:#64748b;">À venir</span>
+                <span v-if="a.start_date <= new Date().toLocaleDateString('en-CA') && a.end_date >= new Date().toLocaleDateString('en-CA')" style="font-size:11px;font-weight:700;text-transform:uppercase;padding:3px 8px;border-radius:6px;background:var(--green-soft);color:var(--green);">En cours</span>
+                <span v-else style="font-size:11px;font-weight:700;text-transform:uppercase;padding:3px 8px;border-radius:6px;background:var(--bg-soft);color:var(--text-muted);">À venir</span>
               </td>
               <td>
                 <button class="icon-btn" @click="() => { selectedStaff = staffList.find(s => s.absences?.some(ab => ab.id === a.id)); showAbsenceModal = true }" title="Gérer">
@@ -498,7 +498,7 @@ onMounted(load)
   transition: background .15s, color .15s;
 }
 .view-toggle-btn.active {
-  background: #fff;
+  background: var(--bg-card);
   color: var(--text-main);
   box-shadow: 0 1px 3px rgba(0,0,0,.07);
 }
@@ -566,7 +566,7 @@ onMounted(load)
   position: relative;
 }
 .cal-cell.cal-cell-today {
-  background: #f0f9ff;
+  background: var(--primary-soft);
 }
 .cal-absent-bar {
   position: absolute;
@@ -580,7 +580,7 @@ onMounted(load)
   position: absolute;
   top: calc(100% + 6px);
   right: 0;
-  background: #fff;
+  background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: 10px;
   box-shadow: 0 8px 24px rgba(0,0,0,.12);

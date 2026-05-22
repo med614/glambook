@@ -76,12 +76,14 @@ export const createAppointment = async (req, res) => {
         // If client_name provided but no ID, find or create client
         if (!finalClientId && client_name) {
             // Check if exists
-            const { data: existingClient } = await supabase
+            const { data: existingClient, error: findError } = await supabase
                 .from('clients')
                 .select('id')
                 .ilike('name', client_name)
                 .limit(1)
-                .single()
+                .maybeSingle()
+
+            if (findError) throw findError
 
             if (existingClient) {
                 finalClientId = existingClient.id

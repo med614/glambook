@@ -1,5 +1,7 @@
 /* =========================================================
    MODAL SYSTEM
+   Toutes les couleurs viennent de base.css (var(--...)).
+   Ne pas mettre de valeur hardcodée ici.
 ========================================================= */
 
 .modal-overlay {
@@ -9,55 +11,68 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(15, 23, 42, 0.6);
-  backdrop-filter: blur(2px);
-  padding: 16px;
+  background: var(--modal-overlay-bg);
+  backdrop-filter: blur(4px);
+  padding: 20px;
 }
 
 .modal {
-  width: 480px;
+  width: 520px;
   max-width: 100%;
   max-height: calc(100vh - 64px);
   display: flex;
   flex-direction: column;
-  background: var(--bg-card);
+  background: var(--modal-bg);
   border-radius: var(--radius-xl);
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-strong);
   box-shadow: var(--shadow-lg);
-  animation: modalPop 0.18s cubic-bezier(0.34, 1.56, 0.64, 1);
+  animation: modalPop 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
   overflow: hidden;
 }
 
 @keyframes modalPop {
-  from { opacity: 0; transform: scale(0.95) translateY(8px); }
-  to   { opacity: 1; transform: scale(1) translateY(0); }
+  from { opacity: 0; transform: translateY(12px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0)   scale(1); }
 }
 
 /* Header */
 .modal-header {
-  padding: 20px 24px 16px;
+  padding: 20px 24px 18px;
   border-bottom: 1px solid var(--border);
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
   flex-shrink: 0;
+  background: var(--modal-header-bg);
+}
+
+/* Dot doré dans le header (optionnel) */
+.modal-header-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--primary);
+  box-shadow: 0 0 8px var(--primary-glow);
+  flex-shrink: 0;
 }
 
 .modal-title {
+  font-family: 'Sora', 'Inter', sans-serif;
   font-size: 16px;
   font-weight: 700;
   color: var(--text-main);
   letter-spacing: -0.01em;
   margin: 0;
+  flex: 1;
 }
 
 .modal-close {
-  width: 30px;
-  height: 30px;
+  width: 32px;
+  height: 32px;
   border-radius: var(--radius);
   border: 1px solid var(--border);
-  background: var(--bg-soft);
+  background: var(--modal-close-bg);
   color: var(--text-muted);
   cursor: pointer;
   display: flex;
@@ -68,14 +83,18 @@
   transition: all 0.15s;
   flex-shrink: 0;
 }
-.modal-close:hover { background: var(--border); color: var(--text-main); }
+.modal-close:hover {
+  background: var(--modal-close-hover-bg);
+  border-color: var(--border-strong);
+  color: var(--text-main);
+}
 
 /* Body */
 .modal-body {
   padding: 20px 24px;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 20px;
   overflow-y: auto;
   flex: 1;
 }
@@ -86,9 +105,9 @@
   border-top: 1px solid var(--border);
   display: flex;
   justify-content: flex-end;
-  gap: 10px;
+  gap: 8px;
   flex-shrink: 0;
-  background: var(--bg-soft);
+  background: var(--modal-footer-bg);
 }
 
 /* Form groups inside modal */
@@ -99,12 +118,14 @@
   margin-bottom: 0;
 }
 
-.modal .form-group label {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--text-muted);
+.modal .form-group label,
+.form-label {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--text-light);
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.07em;
+  display: block;
 }
 
 .modal input,
@@ -127,15 +148,22 @@
   padding: 14px;
   border-radius: var(--radius-lg);
   border: 1px solid var(--border);
-  background: var(--bg-soft);
+  background: var(--bg-main);
 }
 
 .form-box-title label {
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 700;
-  color: var(--text-muted);
+  color: var(--text-light);
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.07em;
+}
+
+/* Divider */
+.form-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 2px 0;
 }
 
 /* Toggle */
@@ -171,13 +199,13 @@
   height: 16px;
   border-radius: 50%;
   background: #fff;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  box-shadow: 0 1px 3px rgba(0,0,0,.2);
   transition: transform 0.2s;
 }
 
 .toggle input:checked + .toggle-switch { background: var(--green); }
 .toggle input:checked + .toggle-switch::after { transform: translateX(16px); }
-.toggle input:focus-visible + .toggle-switch { box-shadow: 0 0 0 3px rgba(22,163,74,0.2); }
+.toggle input:focus-visible + .toggle-switch { box-shadow: 0 0 0 3px var(--green-soft); }
 
 /* Inline fields */
 .inline-fields {
@@ -195,7 +223,7 @@
 
 .addFromList {
   background: transparent;
-  color: var(--green);
+  color: var(--primary);
   font-size: 12px;
   border: none;
   cursor: pointer;
@@ -203,6 +231,188 @@
 }
 .addFromList:disabled { color: var(--text-light); cursor: not-allowed; }
 .removeFromList { background: transparent; border: none; color: var(--red); cursor: pointer; }
+
+/* Client found card */
+.client-found {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 11px 14px;
+  background: var(--bg-main);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  margin-top: 8px;
+}
+.client-found-av {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--primary-soft);
+  color: var(--primary);
+  font-size: 14px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.client-found-name { font-size: 13px; font-weight: 700; color: var(--text-main); }
+.client-found-meta { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+.client-found-check {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--green-soft);
+  color: var(--green);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* New client chip */
+.client-new-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: var(--radius-full);
+  background: var(--primary-soft);
+  color: var(--primary);
+  border: 1px solid rgba(168,129,10,.25);
+  font-size: 11px;
+  font-weight: 700;
+  margin-top: 8px;
+}
+
+/* Service selector */
+.service-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 14px;
+  background: var(--bg-main);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+  user-select: none;
+}
+.service-item:hover { border-color: var(--border-strong); }
+.service-item.selected {
+  border-color: var(--primary);
+  background: rgba(168,129,10,.05);
+}
+
+.si-check {
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+  border: 1.5px solid var(--border-strong);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.15s;
+  color: transparent;
+}
+.service-item.selected .si-check {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #fff;
+}
+.si-name { font-size: 13px; font-weight: 600; color: var(--text-main); }
+.si-meta { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+.si-price { font-size: 12px; font-weight: 700; color: var(--primary); flex-shrink: 0; }
+
+/* Staff pills */
+.staff-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 10px 14px 12px 46px;
+  border-top: 1px solid var(--border);
+}
+.staff-pill {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 11px;
+  border-radius: var(--radius-full);
+  background: var(--bg-soft);
+  border: 1px solid var(--border);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.staff-pill:hover { border-color: var(--border-strong); color: var(--text-main); }
+.staff-pill.picked {
+  background: var(--primary-soft);
+  border-color: var(--primary);
+  color: var(--primary);
+}
+.staff-pill-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--green);
+  flex-shrink: 0;
+}
+.staff-pill.picked .staff-pill-dot { background: var(--primary); }
+
+/* Boutons dans le footer modal — légèrement plus grands et arrondis que les .btn globaux */
+.modal-actions .btn { border-radius: 11px; padding: 9px 18px; }
+.modal-actions .btn-primary { padding: 9px 22px; }
+
+/* Inputs dans les modals — border-radius légèrement plus grand (11px vs 10px global) */
+.modal input:not([type="checkbox"]):not([type="radio"]),
+.modal select,
+.modal textarea { border-radius: 11px; }
+
+/* ── Price input with DH suffix (partagé entre AddWalkin / ServeWalkin / ServeService) ── */
+.price-wrap { position: relative; }
+.price-input {
+  width: 100%; padding: 9px 36px 9px 11px;
+  border: 1px solid var(--input-border); border-radius: 10px;
+  font-size: 13px; font-family: inherit;
+  color: var(--text-main); background: var(--input-bg);
+  box-sizing: border-box; transition: border-color .15s, box-shadow .15s;
+}
+.price-input::placeholder { color: var(--text-light); }
+.price-input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-glow); }
+.price-suffix {
+  position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+  font-size: 11px; font-weight: 700; color: var(--text-light); pointer-events: none;
+}
+
+/* ── Boîte d'alerte orange (warn-box) ── */
+.warn-box {
+  display: flex; align-items: flex-start; gap: 9px;
+  padding: 11px 13px; background: var(--orange-soft);
+  border: 1px solid var(--orange); border-radius: 10px;
+  color: var(--orange); font-size: 13px; line-height: 1.5;
+}
+.warn-box svg { flex-shrink: 0; margin-top: 1px; color: var(--orange); }
+
+/* Modal dark variant (opt-in) */
+.modal--dark {
+  background: #1C1B15;
+  border-color: rgba(212,175,55,.22);
+  color: #F5F2E8;
+}
+.modal--dark .modal-header { background: #1C1B15; border-bottom-color: rgba(212,175,55,.1); }
+.modal--dark .modal-title { color: #F5F2E8; }
+.modal--dark .modal-close { background: #151410; border-color: rgba(212,175,55,.22); color: #7A7255; }
+.modal--dark .modal-close:hover { background: rgba(212,175,55,.1); color: #F5F2E8; }
+.modal--dark .modal-actions { background: #151410; border-color: rgba(212,175,55,.1); }
+.modal--dark .form-box { background: #0E0D0A; border-color: rgba(212,175,55,.1); }
+.modal--dark input, .modal--dark select, .modal--dark textarea {
+  background: #080807; border-color: rgba(212,175,55,.22); color: #F5F2E8;
+}
+.modal--dark .btn-primary { background: #D4AF37; color: #000; box-shadow: 0 0 18px rgba(212,175,55,.3); }
+.modal--dark .btn-secondary { background: transparent; border: 1px solid rgba(212,175,55,.22); color: #7A7255; }
 
 @media (max-width: 640px) {
   .modal { border-radius: var(--radius-lg); }

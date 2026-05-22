@@ -284,23 +284,23 @@ const maxDayRev = computed(() => Math.max(...byDay.value.map(d => d.revenue), 1)
 .kpi-icon { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; margin-bottom: 4px; }
 .kpi-value { font-size: 28px; font-weight: 800; line-height: 1; }
 .kpi-label { font-size: 12px; font-weight: 600; color: var(--text-muted); }
-.kpi-sub { font-size: 11px; color: #f59e0b; font-weight: 600; }
+.kpi-sub { font-size: 11px; color: var(--orange); font-weight: 600; }
 
-.kpi-revenue { background: linear-gradient(135deg, #ecfdf5, #d1fae5); border-color: #6ee7b7; }
-.kpi-revenue .kpi-icon { background: #d1fae5; color: #059669; }
-.kpi-revenue .kpi-value { color: #059669; }
+.kpi-revenue { background: var(--green-soft); border-color: rgba(21,128,61,.25); }
+.kpi-revenue .kpi-icon { background: rgba(21,128,61,.15); color: var(--green); }
+.kpi-revenue .kpi-value { color: var(--green); }
 
-.kpi-basket { background: linear-gradient(135deg, #eff6ff, #dbeafe); border-color: #93c5fd; }
-.kpi-basket .kpi-icon { background: #dbeafe; color: #2563eb; }
-.kpi-basket .kpi-value { color: #2563eb; }
+.kpi-basket { background: var(--blue-soft); border-color: rgba(29,78,216,.25); }
+.kpi-basket .kpi-icon { background: rgba(29,78,216,.15); color: var(--blue); }
+.kpi-basket .kpi-value { color: var(--blue); }
 
-.kpi-rdv { background: linear-gradient(135deg, #f5f3ff, #ede9fe); border-color: #c4b5fd; }
-.kpi-rdv .kpi-icon { background: #ede9fe; color: #7c3aed; }
-.kpi-rdv .kpi-value { color: #7c3aed; }
+.kpi-rdv { background: var(--primary-soft); border-color: rgba(168,129,10,.25); }
+.kpi-rdv .kpi-icon { background: var(--primary-mid); color: var(--primary); }
+.kpi-rdv .kpi-value { color: var(--primary); }
 
-.kpi-services { background: linear-gradient(135deg, #fff7ed, #fed7aa); border-color: #fdba74; }
-.kpi-services .kpi-icon { background: #fed7aa; color: #ea580c; }
-.kpi-services .kpi-value { color: #ea580c; }
+.kpi-services { background: var(--orange-soft); border-color: rgba(217,119,6,.25); }
+.kpi-services .kpi-icon { background: rgba(217,119,6,.2); color: var(--orange); }
+.kpi-services .kpi-value { color: var(--orange); }
 
 /* Chart */
 .chart-card { margin-bottom: 20px; }
@@ -314,7 +314,7 @@ const maxDayRev = computed(() => Math.max(...byDay.value.map(d => d.revenue), 1)
 .bar-col { display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 50px; flex: 1; }
 .bar-amount { font-size: 10px; font-weight: 700; color: var(--primary); white-space: nowrap; min-height: 14px; }
 .bar-wrap { display: flex; align-items: flex-end; width: 100%; justify-content: center; }
-.bar-fill { width: 70%; background: linear-gradient(180deg, #0891b2, #06b6d4); border-radius: 4px 4px 0 0; min-height: 4px; transition: height .3s ease; }
+.bar-fill { width: 70%; background: linear-gradient(180deg, var(--primary), var(--primary-light)); border-radius: 4px 4px 0 0; min-height: 4px; transition: height .3s ease; }
 .bar-label { font-size: 11px; color: var(--text-muted); white-space: nowrap; }
 
 /* Two col */
@@ -331,10 +331,10 @@ const maxDayRev = computed(() => Math.max(...byDay.value.map(d => d.revenue), 1)
 .perf-name { font-size: 13.5px; font-weight: 600; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .perf-meta { font-size: 11.5px; color: var(--text-muted); }
 .perf-right { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; min-width: 90px; }
-.perf-revenue { font-size: 14px; font-weight: 800; color: #059669; }
+.perf-revenue { font-size: 14px; font-weight: 800; color: var(--green); }
 .mini-bar-wrap { width: 80px; height: 5px; background: var(--bg-soft); border-radius: 99px; overflow: hidden; }
 .mini-bar-fill { height: 100%; background: var(--primary); border-radius: 99px; transition: width .3s; }
-.mini-bar-fill.staff-fill { background: #7c3aed; }
+.mini-bar-fill.staff-fill { background: var(--blue); }
 
 .empty-mini { padding: 20px; text-align: center; color: var(--text-muted); font-size: 13px; }
 

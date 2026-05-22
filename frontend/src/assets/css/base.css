@@ -1,67 +1,174 @@
-/* ==============================
-   DESIGN TOKENS
-============================== */
+/* ============================================================
+   GLAMBOOK — DESIGN TOKENS
+   ============================================================
+   SEUL FICHIER à modifier pour changer l'apparence globale.
+
+   COMMENT L'UTILISER :
+   ─────────────────────────────────────────────────────────
+   • Changer le thème couleur  → section "COULEURS PRIMAIRES"
+   • Changer le fond général   → section "BACKGROUNDS"
+   • Changer les textes        → section "TEXTES"
+   • Changer les bordures      → section "BORDURES"
+   • Changer les coins         → section "RAYONS (radius)"
+   • Changer les ombres        → section "OMBRES"
+   • Changer la sidebar        → section "SIDEBAR"
+   • Changer les statuts/badges → section "STATUTS"
+   • Changer les modals        → section "MODALS"
+   • Changer les inputs        → section "FORMULAIRES"
+
+   TOUTES LES AUTRES VALEURS SONT DES var() QUI POINTENT ICI.
+   ============================================================ */
+
 :root {
-  /* Primary */
-  --primary: #0891B2;
-  --primary-dark: #0E7490;
-  --primary-soft: #E0F2FE;
-  --primary-text: #0E7490;
 
-  /* Sidebar */
-  --sidebar-bg: #0F172A;
-  --sidebar-width: 220px;
+  /* ──────────────────────────────────────────────────────
+     COULEURS PRIMAIRES (accent principal de l'appli)
+     Thème actuel : Or ambré — fond crème
+  ────────────────────────────────────────────────────── */
+  --primary:       #A8810A;   /* or ambré — actions primaires */
+  --primary-dark:  #8A6A08;   /* hover / plus sombre */
+  --primary-light: #C49B12;   /* plus clair */
+  --primary-soft:  rgba(168,129,10,.1);  /* fond très léger */
+  --primary-mid:   rgba(168,129,10,.18); /* fond moyen */
+  --primary-text:  #A8810A;   /* texte sur fond clair */
+  --primary-glow:  rgba(168,129,10,.2);  /* lueur box-shadow */
 
-  /* Backgrounds */
-  --bg-main: #F1F5F9;
-  --bg-card: #FFFFFF;
-  --bg-soft: #F8FAFC;
+  /* ──────────────────────────────────────────────────────
+     BACKGROUNDS
+  ────────────────────────────────────────────────────── */
+  --bg-main:      #F5F2EA;   /* fond de toute l'app — crème chaud */
+  --bg-card:      #FFFFFF;   /* fond des cartes / panneaux */
+  --bg-soft:      #EEE9DC;   /* fond secondaire / inputs */
+  --bg-elevated:  #E5DFD0;   /* fond surélevé (popovers…) */
 
-  /* Text */
-  --text-main: #0F172A;
-  --text-muted: #64748B;
-  --text-light: #94A3B8;
+  /* ──────────────────────────────────────────────────────
+     TEXTES
+  ────────────────────────────────────────────────────── */
+  --text-main:    #1C1A10;   /* texte principal */
+  --text-muted:   #7A6A2A;   /* texte secondaire */
+  --text-light:   #B8A060;   /* texte tertiaire / désactivé */
 
-  /* Borders */
-  --border: #E2E8F0;
-  --border-strong: #CBD5E1;
+  /* ──────────────────────────────────────────────────────
+     BORDURES
+  ────────────────────────────────────────────────────── */
+  --border:        rgba(160,130,40,.15);  /* bordure fine */
+  --border-strong: rgba(160,130,40,.30);  /* bordure visible */
 
-  /* Semantic */
-  --green: #16A34A;
-  --green-soft: #DCFCE7;
-  --red: #DC2626;
-  --red-soft: #FEE2E2;
-  --orange: #D97706;
-  --orange-soft: #FEF3C7;
-  --blue: #2563EB;
-  --blue-soft: #DBEAFE;
+  /* ──────────────────────────────────────────────────────
+     COULEURS SÉMANTIQUES (succès / erreur / info / avertissement)
+  ────────────────────────────────────────────────────── */
+  --green:       #15803D;
+  --green-soft:  rgba(21,128,61,.1);
+  --red:         #DC2626;
+  --red-dark:    #B91C1C;
+  --red-soft:    rgba(220,38,38,.1);
+  --orange:      #D97706;
+  --orange-soft: rgba(217,119,6,.12);
+  --blue:        #1D4ED8;
+  --blue-soft:   rgba(29,78,216,.1);
 
-  /* Radius */
-  --radius-sm: 6px;
-  --radius: 8px;
-  --radius-lg: 12px;
-  --radius-xl: 16px;
+  /* ──────────────────────────────────────────────────────
+     STATUTS — badges d'état des rendez-vous / clients
+     Changer ici pour mettre à jour tous les badges partout.
+  ────────────────────────────────────────────────────── */
+  --status-done-bg:          rgba(21,128,61,.1);
+  --status-done-text:        #15803D;
+  --status-done-border:      rgba(21,128,61,.2);
 
-  /* Shadows */
-  --shadow-sm: 0 1px 3px rgba(0,0,0,0.07), 0 1px 2px rgba(0,0,0,0.04);
-  --shadow: 0 4px 12px rgba(0,0,0,0.06);
-  --shadow-lg: 0 20px 50px rgba(0,0,0,0.15);
+  --status-cancelled-bg:     rgba(217,119,6,.1);
+  --status-cancelled-text:   #D97706;
+  --status-cancelled-border: rgba(217,119,6,.2);
 
-  /* Legacy aliases (backward compat) */
-  --bg-card-soft: #F8FAFC;
-  --bg-teal-soft: #E0F2FE;
-  --accent-teal: #0891B2;
-  --accent-green: #16A34A;
-  --accent-blue: #2563EB;
-  --accent-orange: #D97706;
-  --border-soft: #E2E8F0;
-  --radius: 8px;
-  --shadow-card: 0 4px 12px rgba(0,0,0,0.06);
+  --status-noshow-bg:        rgba(220,38,38,.1);
+  --status-noshow-text:      #DC2626;
+  --status-noshow-border:    rgba(220,38,38,.2);
+
+  --status-absent-bg:        rgba(217,119,6,.08);
+  --status-absent-text:      #D97706;
+  --status-absent-border:    rgba(217,119,6,.2);
+
+  --status-active-bg:        rgba(29,78,216,.1);
+  --status-active-text:      #1D4ED8;
+  --status-active-border:    rgba(29,78,216,.2);
+
+  /* ──────────────────────────────────────────────────────
+     SIDEBAR — barre de navigation gauche (reste sombre pour contraste)
+  ────────────────────────────────────────────────────── */
+  --sidebar-bg:              #1C1A10;  /* fond sidebar sombre */
+  --sidebar-width:           64px;
+  --sidebar-item-color:      rgba(184,160,96,.6);  /* icônes inactives */
+  --sidebar-item-hover-bg:   rgba(212,175,55,.12); /* fond hover */
+  --sidebar-item-hover-color:#D4AF37;               /* icône hover */
+  --sidebar-tooltip-bg:      #2A2618;   /* fond tooltip */
+  --sidebar-tooltip-color:   #F5F2E8;   /* texte tooltip */
+  --sidebar-sep:             rgba(212,175,55,.15);  /* séparateur */
+  --sidebar-logout-hover-bg: rgba(220,38,38,.15);
+  --sidebar-logout-hover-color: #FCA5A5;
+
+  /* ──────────────────────────────────────────────────────
+     MODALS — fenêtres modales
+  ────────────────────────────────────────────────────── */
+  --modal-overlay-bg:     rgba(28,26,16,.5);
+  --modal-bg:             #FFFFFF;
+  --modal-header-bg:      #FFFFFF;
+  --modal-footer-bg:      var(--modal-bg);
+  --modal-close-bg:       transparent;
+  --modal-close-hover-bg: rgba(0,0,0,.05);
+
+  /* ──────────────────────────────────────────────────────
+     FORMULAIRES — inputs, selects, textareas
+  ────────────────────────────────────────────────────── */
+  --input-bg:            var(--bg-main);
+  --input-border:        var(--border-strong);
+  --input-border-focus:  var(--primary);
+  --input-focus-ring:    rgba(168,129,10,.2);
+  --input-text:          var(--text-main);
+  --input-placeholder:   var(--text-light);
+
+  /* ──────────────────────────────────────────────────────
+     TABLEAUX
+  ────────────────────────────────────────────────────── */
+  --table-header-bg:  var(--bg-soft);
+  --table-row-hover:  rgba(168,129,10,.04);
+
+  /* ──────────────────────────────────────────────────────
+     INTÉGRATIONS TIERCES
+  ────────────────────────────────────────────────────── */
+  --whatsapp: #25D366;
+
+  /* ──────────────────────────────────────────────────────
+     RAYONS (border-radius)
+  ────────────────────────────────────────────────────── */
+  --radius-sm:   6px;
+  --radius:      10px;
+  --radius-lg:   13px;
+  --radius-xl:   20px;
+  --radius-full: 999px;
+
+  /* ──────────────────────────────────────────────────────
+     OMBRES
+  ────────────────────────────────────────────────────── */
+  --shadow-sm: 0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.05);
+  --shadow:    0 4px 12px rgba(0,0,0,.12);
+  --shadow-lg: 0 24px 64px rgba(0,0,0,.18), 0 4px 16px rgba(0,0,0,.08);
+
+  /* ──────────────────────────────────────────────────────
+     ALIASES LEGACY (compatibilité avec ancien code)
+     Ne pas utiliser dans du nouveau code.
+  ────────────────────────────────────────────────────── */
+  --bg-card-soft:  var(--bg-soft);
+  --bg-teal-soft:  var(--primary-soft);
+  --accent-teal:   var(--primary);
+  --accent-green:  var(--green);
+  --accent-blue:   var(--blue);
+  --accent-orange: var(--orange);
+  --border-soft:   var(--border);
+  --shadow-card:   var(--shadow);
 }
 
-/* ==============================
+/* ============================================================
    RESET & BASE
-============================== */
+============================================================ */
 *, *::before, *::after {
   box-sizing: border-box;
   margin: 0;
@@ -92,10 +199,11 @@ a {
   color: inherit;
 }
 
-button {
+button, input, select, textarea {
   font-family: inherit;
 }
 
-input, select, textarea {
-  font-family: inherit;
-}
+/* Scrollbar fine dorée */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(168,129,10,.25); border-radius: 2px; }

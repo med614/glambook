@@ -91,7 +91,7 @@ function catColor(s) {
         </svg>
         <input v-model="searchQuery" type="text" placeholder="Rechercher…" />
       </div>
-      <select v-model="filterCategory" class="filter-select">
+      <select v-model="filterCategory" style="width:auto;min-width:180px;">
         <option value="">Toutes les catégories</option>
         <option v-for="c in categories" :key="c.id" :value="c.id">{{ c.name }}</option>
       </select>
@@ -104,6 +104,7 @@ function catColor(s) {
             <th>Prestation</th>
             <th>Catégorie</th>
             <th>Durée</th>
+            <th>Prix</th>
             <th>Statut</th>
             <th>WhatsApp</th>
             <th style="width:56px;"></th>
@@ -123,6 +124,10 @@ function catColor(s) {
             </td>
             <td>
               <span style="color:var(--text-muted);font-size:13px;">{{ s.duration_minutes }} min</span>
+            </td>
+            <td>
+              <span v-if="s.price != null" style="font-weight:700;font-size:13px;color:var(--text-main);">{{ s.price }} DH</span>
+              <span v-else style="color:var(--text-muted);font-size:13px;">Sur devis</span>
             </td>
             <td>
               <div style="display:flex;align-items:center;gap:10px;">
@@ -177,15 +182,6 @@ function catColor(s) {
 </template>
 
 <style scoped>
-.filter-select {
-  padding: 7px 10px;
-  font-size: 13px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--bg-main);
-  color: var(--text-main);
-}
-.filter-select:focus { outline: none; border-color: var(--primary); }
 
 .cat-badge {
   display: inline-flex;

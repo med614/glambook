@@ -108,10 +108,10 @@ function proceed() {
               <div class="bk-org-info">
                 <div class="bk-org-name">{{ org.name }}</div>
               </div>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="color:#94a3b8;flex-shrink:0"><polyline points="9 18 15 12 9 6"/></svg>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="color:var(--text-light);flex-shrink:0"><polyline points="9 18 15 12 9 6"/></svg>
             </button>
 
-            <div v-if="!filteredOrgs.length" style="text-align:center;padding:32px;color:#94a3b8;font-size:14px;">
+            <div v-if="!filteredOrgs.length" style="text-align:center;padding:32px;color:var(--text-light);font-size:14px;">
               Aucun salon trouvé.
             </div>
           </div>
@@ -177,7 +177,7 @@ function proceed() {
 <style scoped>
 .bk-layout {
   min-height: 100vh;
-  background: linear-gradient(135deg, #f0f4ff 0%, #faf5ff 100%);
+  background: var(--bg-main);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -199,33 +199,33 @@ function proceed() {
 }
 .bk-logo {
   width: 56px; height: 56px;
-  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  background: linear-gradient(135deg, var(--primary), var(--primary-light));
   border-radius: 16px;
   display: flex; align-items: center; justify-content: center;
   color: #fff;
   margin: 0 auto 14px;
 }
-.bk-title { font-size: 22px; font-weight: 800; color: #1e293b; margin: 0 0 4px; }
-.bk-sub { font-size: 13.5px; color: #64748b; margin: 0; }
+.bk-title { font-size: 22px; font-weight: 800; color: var(--text-main); margin: 0 0 4px; }
+.bk-sub { font-size: 13.5px; color: var(--text-muted); margin: 0; }
 
 .bk-step-label {
   font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: .06em;
-  color: #94a3b8;
+  color: var(--text-light);
   margin-bottom: 12px;
 }
 
 .bk-loading {
   display: flex; align-items: center; gap: 12px;
   justify-content: center; padding: 32px;
-  color: #64748b; font-size: 14px;
+  color: var(--text-muted); font-size: 14px;
 }
 .bk-spinner {
   width: 20px; height: 20px;
-  border: 2px solid #e2e8f0;
-  border-top-color: #6366f1;
+  border: 2px solid var(--border-strong);
+  border-top-color: var(--primary);
   border-radius: 50%;
   animation: spin .7s linear infinite;
 }
@@ -233,7 +233,7 @@ function proceed() {
 
 .bk-search-wrap {
   display: flex; align-items: center; gap: 8px;
-  background: #f8fafc; border: 1px solid #e2e8f0;
+  background: var(--bg-main); border: 1px solid var(--border-strong);
   border-radius: 10px; padding: 0 12px;
   margin-bottom: 12px;
 }
@@ -247,32 +247,32 @@ function proceed() {
 .bk-org-item {
   display: flex; align-items: center; gap: 12px;
   padding: 13px 16px;
-  border: 1.5px solid #e2e8f0; border-radius: 12px;
+  border: 1.5px solid var(--border-strong); border-radius: 12px;
   background: #fff; cursor: pointer;
   transition: border-color .15s, box-shadow .15s;
   text-align: left; width: 100%;
 }
-.bk-org-item:hover { border-color: #6366f1; box-shadow: 0 0 0 3px #6366f115; }
+.bk-org-item:hover { border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-glow); }
 
 .bk-org-logo {
   width: 42px; height: 42px; border-radius: 10px;
-  overflow: hidden; flex-shrink: 0; background: #f1f5f9;
+  overflow: hidden; flex-shrink: 0; background: var(--bg-soft);
 }
 .bk-org-logo img { width: 100%; height: 100%; object-fit: contain; }
 .bk-org-avatar {
   width: 42px; height: 42px; border-radius: 10px;
-  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  background: linear-gradient(135deg, var(--primary), var(--primary-light));
   color: #fff; font-size: 18px; font-weight: 700;
   display: flex; align-items: center; justify-content: center; flex-shrink: 0;
 }
 .bk-org-info { flex: 1; min-width: 0; }
-.bk-org-name { font-size: 14.5px; font-weight: 700; color: #1e293b; }
-.bk-org-city { font-size: 12px; color: #94a3b8; margin-top: 1px; }
+.bk-org-name { font-size: 14.5px; font-weight: 700; color: var(--text-main); }
+.bk-org-city { font-size: 12px; color: var(--text-light); margin-top: 1px; }
 
 /* Step 2 */
 .bk-back {
   display: inline-flex; align-items: center; gap: 5px;
-  font-size: 12.5px; font-weight: 600; color: #6366f1;
+  font-size: 12.5px; font-weight: 600; color: var(--primary);
   background: none; border: none; cursor: pointer; padding: 0;
   margin-bottom: 16px;
 }
@@ -280,30 +280,30 @@ function proceed() {
 .bk-selected-org {
   display: flex; align-items: center; gap: 10px;
   padding: 12px 14px;
-  background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px;
+  background: var(--bg-main); border: 1px solid var(--border-strong); border-radius: 12px;
   margin-bottom: 4px;
 }
 .bk-org-logo-sm { width: 32px; height: 32px; border-radius: 8px; overflow: hidden; }
 .bk-org-logo-sm img { width: 100%; height: 100%; object-fit: contain; }
 .bk-org-avatar-sm {
   width: 32px; height: 32px; border-radius: 8px;
-  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  background: linear-gradient(135deg, var(--primary), var(--primary-light));
   color: #fff; font-size: 14px; font-weight: 700;
   display: flex; align-items: center; justify-content: center;
 }
-.bk-selected-name { font-size: 14px; font-weight: 700; color: #1e293b; }
+.bk-selected-name { font-size: 14px; font-weight: 700; color: var(--text-main); }
 
 .bk-form { display: flex; flex-direction: column; gap: 14px; margin-top: 8px; }
 .bk-row { display: flex; gap: 12px; }
 .bk-field { display: flex; flex-direction: column; gap: 6px; flex: 1; }
-.bk-field label { font-size: 12.5px; font-weight: 600; color: #475569; }
+.bk-field label { font-size: 12.5px; font-weight: 600; color: var(--text-muted); }
 .bk-field input {
   padding: 10px 13px;
-  border: 1.5px solid #e2e8f0; border-radius: 10px;
-  font-size: 14px; color: #1e293b; outline: none;
+  border: 1.5px solid var(--border-strong); border-radius: 10px;
+  font-size: 14px; color: var(--text-main); outline: none;
   transition: border-color .15s;
 }
-.bk-field input:focus { border-color: #6366f1; }
+.bk-field input:focus { border-color: var(--primary); }
 
 .bk-error {
   background: #fef2f2; border: 1px solid #fca5a5;
@@ -313,7 +313,7 @@ function proceed() {
 
 .bk-btn-primary {
   display: flex; align-items: center; justify-content: center; gap: 8px;
-  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  background: linear-gradient(135deg, var(--primary), var(--primary-light));
   color: #fff; border: none; border-radius: 12px;
   padding: 13px 20px; font-size: 14.5px; font-weight: 700;
   cursor: pointer; transition: opacity .15s;
@@ -325,6 +325,6 @@ function proceed() {
   text-align: center; margin-top: 24px;
   font-size: 13px;
 }
-.bk-footer-link a { color: #94a3b8; text-decoration: none; }
-.bk-footer-link a:hover { color: #6366f1; }
+.bk-footer-link a { color: var(--text-light); text-decoration: none; }
+.bk-footer-link a:hover { color: var(--primary); }
 </style>

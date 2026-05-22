@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Glambook — Modal Preview</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;1,14..32,400&family=Sora:wght@600;700;800&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:       #0D0B0A;
+  --surface:  #161210;
+  --surface2: #1E1916;
+  --border:   rgba(255,255,255,.07);
+  --border2:  rgba(255,255,255,.12);
+  --p:        #E8845A;
+  --p2:       #F0A07C;
+  --p-glow:   rgba(232,132,90,.25);
+  --green:    #22C55E;
+  --green-s:  rgba(34,197,94,.12);
+  --blue:     #60A5FA;
+  --blue-s:   rgba(96,165,250,.12);
+  --red:      #F87171;
+  --gold:     #FBBF24;
+  --text:     #F5F0EC;
+  --muted:    #8A7F78;
+  --light:    #5A524C;
+}
+
+body {
+  font-family: 'Inter', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Noise texture */
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='.03'/%3E%3C/svg%3E");
+  pointer-events: none; z-index: 0;
+}
+
+/* Glow orbs */
+.glow-orb { position: fixed; border-radius: 50%; filter: blur(80px); pointer-events: none; z-index: 0; }
+.glow-1 { width: 500px; height: 500px; top: -120px; right: 5%; background: radial-gradient(circle, rgba(232,132,90,.14) 0%, transparent 70%); }
+.glow-2 { width: 350px; height: 350px; bottom: 5%; left: 5%; background: radial-gradient(circle, rgba(96,165,250,.08) 0%, transparent 70%); }
+
+/* ── OVERLAY ── */
+.overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,.72);
+  backdrop-filter: blur(14px);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 100; padding: 16px;
+}
+
+/* ── MODAL ── */
+@keyframes modalPop {
+  from { opacity: 0; transform: scale(0.95) translateY(10px); }
+  to   { opacity: 1; transform: scale(1)    translateY(0); }
+}
+
+.modal {
+  width: 460px; max-width: 100%;
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: 16px;
+  display: flex; flex-direction: column;
+  overflow: hidden;
+  animation: modalPop .2s cubic-bezier(.34,1.56,.64,1) both;
+  position: relative; z-index: 1;
+  box-shadow: 0 24px 60px rgba(0,0,0,.6), 0 0 0 1px rgba(255,255,255,.04);
+}
+
+/* Header */
+.modal-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 18px 22px 16px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.modal-title {
+  font-family: 'Sora', sans-serif;
+  font-size: 15px; font-weight: 700; color: var(--text);
+  letter-spacing: -.01em;
+}
+.modal-close {
+  width: 28px; height: 28px; border-radius: 8px;
+  border: 1px solid var(--border2);
+  background: var(--surface); color: var(--muted);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; transition: all .15s; font-size: 16px; line-height: 1;
+}
+.modal-close:hover { background: var(--border2); color: var(--text); }
+
+/* Body */
+.modal-body {
+  padding: 18px 22px;
+  display: flex; flex-direction: column; gap: 14px;
+  overflow-y: auto; flex: 1;
+}
+
+/* ── Client banner ── */
+.client-banner {
+  display: flex; align-items: center; gap: 13px;
+  padding: 13px 15px;
+  background: var(--surface);
+  border: 1px solid var(--border2); border-radius: 13px;
+}
+.client-avatar {
+  width: 44px; height: 44px; border-radius: 50%;
+  background: rgba(232,132,90,.18); color: var(--p);
+  font-size: 18px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  box-shadow: 0 0 0 2px rgba(232,132,90,.2), 0 0 16px rgba(232,132,90,.1);
+}
+.client-info { flex: 1; min-width: 0; }
+.client-name {
+  font-size: 14px; font-weight: 700; color: var(--text);
+  display: flex; align-items: center; gap: 8px;
+}
+.client-badge {
+  font-size: 10px; font-weight: 700;
+  padding: 2px 8px; border-radius: 99px;
+  background: var(--green-s); color: var(--green);
+  border: 1px solid rgba(34,197,94,.2);
+}
+.client-meta { font-size: 11.5px; color: var(--muted); margin-top: 2px; }
+
+/* ── Service card ── */
+.svc-card {
+  padding: 13px 15px;
+  background: rgba(96,165,250,.06);
+  border: 1px solid rgba(96,165,250,.18);
+  border-left: 2.5px solid var(--blue);
+  border-radius: 12px;
+}
+.svc-label {
+  font-size: 10px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .07em; color: var(--blue); margin-bottom: 5px;
+}
+.svc-name { font-size: 14px; font-weight: 700; color: var(--text); }
+.svc-meta {
+  display: flex; align-items: center; gap: 10px; margin-top: 5px;
+}
+.svc-dur {
+  font-size: 10.5px; font-weight: 600; color: var(--light);
+  background: rgba(255,255,255,.04); border: 1px solid var(--border2);
+  border-radius: 6px; padding: 2px 7px;
+}
+.svc-time { font-size: 11px; font-weight: 600; color: var(--blue); }
+
+/* ── Form group ── */
+.form-group { display: flex; flex-direction: column; gap: 6px; }
+.form-label {
+  font-size: 10.5px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .06em; color: var(--muted);
+}
+
+/* ── Custom select ── */
+.custom-select {
+  position: relative;
+  background: var(--surface);
+  border: 1.5px solid var(--border2);
+  border-radius: 10px;
+  padding: 10px 38px 10px 12px;
+  cursor: pointer;
+  transition: border-color .15s;
+  display: flex; align-items: center; gap: 10px;
+}
+.custom-select:hover { border-color: rgba(232,132,90,.35); }
+.custom-select::after {
+  content: '';
+  position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+  width: 0; height: 0;
+  border-left: 4px solid transparent;
+  border-right: 4px solid transparent;
+  border-top: 5px solid var(--muted);
+}
+.select-avatar {
+  width: 28px; height: 28px; border-radius: 50%;
+  background: linear-gradient(135deg, #8B5CF6, #A78BFA);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 700; color: #fff; flex-shrink: 0;
+}
+.select-info { flex: 1; min-width: 0; }
+.select-name { font-size: 13px; font-weight: 600; color: var(--text); }
+.select-hint { font-size: 10.5px; color: var(--muted); margin-top: 1px; }
+.select-badge {
+  font-size: 9.5px; font-weight: 700;
+  padding: 2px 7px; border-radius: 99px;
+  background: rgba(232,132,90,.15); color: var(--p);
+  border: 1px solid rgba(232,132,90,.25);
+  flex-shrink: 0;
+}
+
+/* ── Price input ── */
+.price-wrap { position: relative; }
+.price-input {
+  width: 100%; padding: 10px 44px 10px 13px;
+  background: var(--surface); color: var(--text);
+  border: 1.5px solid var(--border2); border-radius: 10px;
+  font-size: 14px; font-family: 'Inter', sans-serif;
+  transition: border-color .15s, box-shadow .15s;
+}
+.price-input:focus {
+  outline: none;
+  border-color: var(--p);
+  box-shadow: 0 0 0 3px rgba(232,132,90,.12);
+}
+.price-input::placeholder { color: var(--light); }
+.price-suffix {
+  position: absolute; right: 13px; top: 50%; transform: translateY(-50%);
+  font-size: 12px; font-weight: 700; color: var(--muted); pointer-events: none;
+}
+
+/* ── Footer ── */
+.modal-footer {
+  padding: 14px 22px;
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+  display: flex; justify-content: flex-end; gap: 10px;
+  flex-shrink: 0;
+}
+.btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  border: none; border-radius: 9px;
+  font-family: 'Inter', sans-serif; font-weight: 600;
+  font-size: 13px; cursor: pointer; transition: all .15s;
+  padding: 9px 18px;
+}
+.btn-cancel {
+  background: transparent;
+  border: 1px solid var(--border2);
+  color: var(--muted);
+}
+.btn-cancel:hover { border-color: rgba(255,255,255,.22); color: var(--text); }
+.btn-primary {
+  background: var(--p); color: #fff;
+  box-shadow: 0 0 18px var(--p-glow), 0 2px 8px rgba(0,0,0,.3);
+}
+.btn-primary:hover {
+  background: var(--p2);
+  box-shadow: 0 0 28px var(--p-glow), 0 4px 12px rgba(0,0,0,.4);
+  transform: translateY(-1px);
+}
+.btn-primary:active { transform: translateY(0); }
+
+/* ── Trigger button (for demo) ── */
+.demo-trigger {
+  position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%);
+  z-index: 200;
+  background: var(--surface2); border: 1px solid var(--border2);
+  color: var(--muted); border-radius: 10px;
+  font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 600;
+  padding: 9px 18px; cursor: pointer; transition: all .15s;
+}
+.demo-trigger:hover { border-color: var(--p); color: var(--p); }
+
+/* ── Tags row ── */
+.tags-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.tag {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 10.5px; font-weight: 600; padding: 3px 9px; border-radius: 99px;
+}
+.tag-p   { background: rgba(232,132,90,.12); color: var(--p);    border: 1px solid rgba(232,132,90,.2); }
+.tag-g   { background: var(--green-s);       color: var(--green); border: 1px solid rgba(34,197,94,.2); }
+.tag-b   { background: var(--blue-s);        color: var(--blue);  border: 1px solid rgba(96,165,250,.2); }
+.tag-muted { background: rgba(255,255,255,.04); color: var(--muted); border: 1px solid var(--border); }
+.dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 99px; }
+</style>
+</head>
+<body>
+
+<div class="glow-orb glow-1"></div>
+<div class="glow-orb glow-2"></div>
+
+<!-- ── OVERLAY + MODAL ── -->
+<div class="overlay">
+  <div class="modal">
+
+    <!-- Header -->
+    <div class="modal-header">
+      <span class="modal-title">Lancer la prestation</span>
+      <button class="modal-close" onclick="this.closest('.overlay').style.display='none'">×</button>
+    </div>
+
+    <!-- Body -->
+    <div class="modal-body">
+
+      <!-- Client banner -->
+      <div class="client-banner">
+        <div class="client-avatar">S</div>
+        <div class="client-info">
+          <div class="client-name">
+            Sara El Fassi
+            <span class="client-badge">En cours</span>
+          </div>
+          <div class="client-meta">Arrivée 09:32 · Sans RDV</div>
+        </div>
+        <div class="tags-row">
+          <span class="tag tag-p">
+            <span class="dot"></span>Walkin
+          </span>
+        </div>
+      </div>
+
+      <!-- Service card -->
+      <div class="svc-card">
+        <div class="svc-label">Prestation</div>
+        <div class="svc-name">Balayage complet</div>
+        <div class="svc-meta">
+          <span class="svc-dur">90 min</span>
+          <span class="svc-time">Prévue à 09:35</span>
+        </div>
+      </div>
+
+      <!-- Collaborateur -->
+      <div class="form-group">
+        <div class="form-label">Collaborateur</div>
+        <div class="custom-select">
+          <div class="select-avatar">N</div>
+          <div class="select-info">
+            <div class="select-name">Nadia Ouali</div>
+            <div class="select-hint">Disponible · 1 prestation en cours</div>
+          </div>
+          <span class="select-badge">Recommandé</span>
+        </div>
+      </div>
+
+      <!-- Prix -->
+      <div class="form-group">
+        <div class="form-label">Prix</div>
+        <div class="price-wrap">
+          <input class="price-input" type="number" value="320" min="0" step="1" />
+          <span class="price-suffix">DH</span>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Footer -->
+    <div class="modal-footer">
+      <button class="btn btn-cancel" onclick="this.closest('.overlay').style.display='none'">Annuler</button>
+      <button class="btn btn-primary">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        Lancer
+      </button>
+    </div>
+
+  </div>
+</div>
+
+<!-- Demo trigger -->
+<button class="demo-trigger" onclick="document.querySelector('.overlay').style.display='flex'">
+  ↑ Rouvrir le modal
+</button>
+
+</body>
+</html>

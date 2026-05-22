@@ -1,0 +1,1529 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Aujourd'hui — Simulation</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Sora:wght@600;700;800&display=swap" rel="stylesheet" />
+<style>
+/* ── RESET & BASE ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg:      #F5F2EA;
+  --s1:      #FFFFFF;
+  --s2:      #EEE9DC;
+  --s3:      #E5DFD0;
+  --border:  rgba(160,130,40,.15);
+  --border2: rgba(160,130,40,.3);
+  --p:       #A8810A;
+  --p2:      #C49B12;
+  --pglow:   rgba(168,129,10,.2);
+  --text:    #1C1A10;
+  --muted:   #7A6A2A;
+  --light:   #B8A060;
+  --green:   #15803D;
+  --green-s: rgba(21,128,61,.1);
+  --blue:    #1D4ED8;
+  --blue-s:  rgba(29,78,216,.1);
+  --gold:    #A8810A;
+  --gold-s:  rgba(168,129,10,.1);
+  --red:     #DC2626;
+  --red-s:   rgba(220,38,38,.1);
+}
+body {
+  font-family: 'Inter', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  font-size: 13px;
+}
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(212,175,55,.2); border-radius: 2px; }
+
+/* ─────────────────────────────────────────────
+   TOPBAR
+───────────────────────────────────────────── */
+.topbar {
+  display: flex; align-items: center; gap: 16px;
+  padding: 0 22px; height: 56px;
+  background: rgba(245,242,234,.96);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  position: relative; z-index: 10;
+}
+.topbar-left { display: flex; flex-direction: column; gap: 1px; }
+.topbar-title {
+  font-family: 'Sora', sans-serif;
+  font-size: 17px; font-weight: 700; color: var(--text);
+  display: flex; align-items: center; gap: 8px;
+}
+.topbar-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--p); box-shadow: 0 0 8px var(--pglow); }
+.topbar-date { font-size: 11px; color: var(--muted); font-weight: 500; }
+.topbar-time { color: var(--p); font-weight: 700; }
+
+.topbar-stats { display: flex; align-items: center; gap: 6px; margin-left: 24px; }
+.stat-chip {
+  display: flex; align-items: center; gap: 5px;
+  padding: 4px 10px; border-radius: 20px;
+  background: var(--s2); border: 1px solid var(--border2);
+  font-size: 11px; font-weight: 700; color: var(--muted);
+  white-space: nowrap;
+}
+.stat-chip .num { font-size: 13px; font-weight: 800; }
+.stat-chip.c-orange .num { color: #f59e0b; }
+.stat-chip.c-blue   .num { color: var(--blue); }
+.stat-chip.c-green  .num { color: var(--green); }
+.stat-chip.c-muted  .num { color: var(--muted); }
+.stat-chip.c-gold   .num { color: var(--gold); }
+
+.topbar-right { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+.btn-primary {
+  display: flex; align-items: center; gap: 6px;
+  padding: 7px 14px; border-radius: 10px;
+  background: var(--p); color: #fff; border: none;
+  font-size: 12px; font-weight: 700; cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  box-shadow: 0 0 18px var(--pglow);
+  transition: background .15s, transform .1s;
+}
+.btn-primary:hover { background: var(--p2); transform: translateY(-1px); }
+.btn-outline {
+  display: flex; align-items: center; gap: 6px;
+  padding: 6px 12px; border-radius: 9px;
+  background: transparent; color: var(--muted);
+  border: 1px solid var(--border2);
+  font-size: 12px; font-weight: 600; cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  transition: all .15s;
+}
+.btn-outline:hover { color: var(--text); border-color: rgba(0,0,0,.22); background: rgba(0,0,0,.04); }
+
+/* ─────────────────────────────────────────────
+   STAFF STRIP
+───────────────────────────────────────────── */
+.staff-strip {
+  display: flex; align-items: center; gap: 6px;
+  padding: 8px 22px;
+  background: var(--s1);
+  border-bottom: 1px solid var(--border);
+  overflow-x: auto; flex-shrink: 0;
+}
+.staff-chip {
+  display: flex; align-items: center; gap: 7px;
+  padding: 6px 12px; border-radius: 20px;
+  background: var(--s2); border: 1px solid var(--border);
+  white-space: nowrap; cursor: default;
+  transition: border-color .15s;
+  flex-shrink: 0;
+}
+.staff-chip:hover { border-color: var(--border2); }
+.staff-chip.absent { opacity: .45; }
+
+.sc-av {
+  width: 26px; height: 26px; border-radius: 50%;
+  font-size: 11px; font-weight: 800;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.sc-av.a0 { background: rgba(168,129,10,.15); color: var(--p); }
+.sc-av.a1 { background: rgba(96,165,250,.18); color: var(--blue); }
+.sc-av.a2 { background: rgba(34,197,94,.18);  color: var(--green); }
+.sc-av.a3 { background: rgba(251,191,36,.18); color: var(--gold); }
+
+.sc-info { display: flex; flex-direction: column; gap: 1px; }
+.sc-name { font-size: 12px; font-weight: 700; color: var(--text); }
+.sc-status { font-size: 10px; font-weight: 600; }
+.sc-status.free    { color: var(--green); }
+.sc-status.busy    { color: var(--p); }
+.sc-status.loaded  { color: var(--gold); }
+.sc-status.absent  { color: var(--muted); }
+
+.sc-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.dot-free   { background: var(--green); box-shadow: 0 0 6px rgba(34,197,94,.5); }
+.dot-busy   { background: var(--p);     box-shadow: 0 0 6px var(--pglow); }
+.dot-loaded { background: var(--gold);  box-shadow: 0 0 6px rgba(251,191,36,.4); }
+.dot-absent { background: var(--light); }
+
+/* ─────────────────────────────────────────────
+   TABS
+───────────────────────────────────────────── */
+.tabs-bar {
+  display: flex; align-items: center; gap: 2px;
+  padding: 0 22px;
+  background: var(--s1);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.tab-btn {
+  display: flex; align-items: center; gap: 7px;
+  padding: 12px 16px 11px;
+  border: none; background: transparent;
+  font-family: 'Inter', sans-serif;
+  font-size: 12px; font-weight: 600; color: var(--muted);
+  cursor: pointer; border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  transition: color .15s;
+  white-space: nowrap;
+}
+.tab-btn:hover { color: var(--text); }
+.tab-btn.active { color: var(--text); border-bottom-color: var(--p); }
+
+.tab-badge {
+  min-width: 18px; height: 18px; border-radius: 9px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px; font-weight: 800; padding: 0 5px;
+  background: rgba(0,0,0,.07); color: var(--muted);
+}
+.tab-badge.warn  { background: rgba(251,191,36,.15); color: var(--gold); }
+.tab-badge.alert { background: rgba(248,113,113,.15); color: var(--red); }
+.tab-badge.active-badge { background: rgba(168,129,10,.18); color: var(--p); }
+
+/* ─────────────────────────────────────────────
+   TAB CONTENT
+───────────────────────────────────────────── */
+.tab-content { flex: 1; overflow: hidden; }
+.tab-panel { display: none; height: 100%; overflow-y: auto; padding: 16px 22px; }
+.tab-panel.active { display: block; }
+
+/* Empty state */
+.empty-state {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 10px; padding: 60px 20px;
+  color: var(--muted); text-align: center;
+}
+.empty-state svg { opacity: .35; }
+.empty-state span { font-size: 13px; }
+
+/* Section title */
+.sec-title {
+  font-size: 10px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .08em; color: var(--light);
+  margin-bottom: 10px; margin-top: 16px;
+  display: flex; align-items: center; gap: 6px;
+}
+.sec-title:first-child { margin-top: 0; }
+.sec-title::before { content: ''; flex: 1; height: 1px; background: var(--border); }
+.sec-title::after  { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+/* ─────────────────────────────────────────────
+   TAB 1 — FILE D'ATTENTE
+───────────────────────────────────────────── */
+.queue-list { display: flex; flex-direction: column; gap: 6px; }
+
+.queue-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 14px;
+  background: var(--s1); border: 1px solid var(--border);
+  border-radius: 13px; cursor: pointer;
+  transition: border-color .15s;
+}
+.queue-row:hover { border-color: var(--border2); }
+.queue-row.urgent { border-color: rgba(251,191,36,.25); background: rgba(251,191,36,.03); }
+
+.q-rank {
+  width: 24px; height: 24px; border-radius: 50%;
+  background: rgba(0,0,0,.06); color: var(--muted);
+  font-size: 11px; font-weight: 800;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.q-av {
+  width: 38px; height: 38px; border-radius: 50%;
+  background: rgba(168,129,10,.14); color: var(--p);
+  font-size: 15px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+
+.q-info { flex: 1; min-width: 0; }
+.q-name {
+  font-size: 13px; font-weight: 700; color: var(--text);
+  display: flex; align-items: center; gap: 6px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.q-svc { font-size: 11.5px; color: var(--muted); margin-top: 2px; }
+.flag { display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; border-radius: 4px; background: rgba(217,119,6,.15); color: #D97706; font-size: 9px; font-weight: 800; flex-shrink: 0; }
+
+.q-meta { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; flex-shrink: 0; }
+.q-arrival { font-size: 11px; color: var(--muted); }
+.q-wait { font-size: 11px; font-weight: 700; color: var(--muted); }
+.q-wait.long { color: var(--gold); }
+.q-wait.very-long { color: var(--red); }
+
+.btn-serve {
+  padding: 6px 14px; border-radius: 9px;
+  background: var(--p); color: #fff; border: none;
+  font-size: 12px; font-weight: 700; cursor: pointer;
+  font-family: 'Inter', sans-serif; white-space: nowrap;
+  transition: background .15s;
+  flex-shrink: 0;
+}
+.btn-serve:hover { background: var(--p2); }
+
+.btn-del {
+  width: 30px; height: 30px; border-radius: 8px;
+  background: transparent; border: 1px solid rgba(0,0,0,.1);
+  color: var(--light); cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all .15s; flex-shrink: 0;
+}
+.btn-del:hover { border-color: var(--red); color: var(--red); }
+
+/* ─────────────────────────────────────────────
+   TAB 2 — PLANNING DU JOUR
+───────────────────────────────────────────── */
+.planning-list { display: flex; flex-direction: column; gap: 4px; }
+
+.plan-row {
+  display: grid;
+  grid-template-columns: 80px 1fr 130px 100px 80px auto;
+  align-items: center; gap: 12px;
+  padding: 11px 14px;
+  background: var(--s1); border: 1px solid var(--border);
+  border-radius: 11px; cursor: pointer;
+  transition: border-color .15s;
+}
+.plan-row:hover { border-color: var(--border2); }
+.plan-row.done { opacity: .55; }
+.plan-row.walkin { border-left: 2.5px solid rgba(168,129,10,.4); }
+
+.p-time { font-family: 'Sora', sans-serif; font-size: 13px; font-weight: 700; color: var(--muted); }
+.p-client { font-size: 13px; font-weight: 700; color: var(--text); display: flex; align-items: center; gap: 6px; }
+.p-svc { font-size: 11.5px; color: var(--muted); margin-top: 2px; }
+.p-staff { font-size: 12px; color: var(--muted); display: flex; align-items: center; gap: 5px; }
+.p-staff svg { flex-shrink: 0; }
+
+.badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 9px; border-radius: 20px;
+  font-size: 10px; font-weight: 700; white-space: nowrap;
+}
+.badge-green   { background: var(--green-s); color: var(--green); }
+.badge-blue    { background: var(--blue-s);  color: var(--blue); }
+.badge-done    { background: rgba(0,0,0,.06); color: var(--light); }
+.badge-red     { background: var(--red-s);   color: var(--red); }
+.badge-orange  { background: rgba(168,129,10,.1); color: var(--p); }
+.badge-walkin  { background: rgba(168,129,10,.08); color: var(--p); border: 1px solid rgba(168,129,10,.2); }
+
+.p-actions { display: flex; gap: 6px; justify-content: flex-end; }
+.btn-sm {
+  padding: 5px 11px; border-radius: 8px;
+  font-size: 11px; font-weight: 700; cursor: pointer;
+  font-family: 'Inter', sans-serif; border: none; white-space: nowrap;
+  transition: all .15s;
+}
+.btn-arrive { background: var(--green-s); color: var(--green); border: 1px solid rgba(34,197,94,.2); }
+.btn-arrive:hover { background: rgba(34,197,94,.18); }
+.btn-finish { background: rgba(168,129,10,.12); color: var(--p); border: 1px solid rgba(168,129,10,.2); }
+.btn-finish:hover { background: rgba(168,129,10,.22); }
+.btn-ghost { background: transparent; color: var(--muted); border: 1px solid var(--border2); }
+.btn-ghost:hover { color: var(--text); border-color: rgba(0,0,0,.2); }
+
+.plan-walkin-sep {
+  font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .07em;
+  color: var(--p); padding: 10px 2px 4px;
+  display: flex; align-items: center; gap: 8px;
+}
+.plan-walkin-sep::after { content: ''; flex: 1; height: 1px; background: rgba(168,129,10,.2); }
+
+/* ─────────────────────────────────────────────
+   TAB 3 — NON AFFECTÉS
+───────────────────────────────────────────── */
+.unassigned-notice {
+  display: flex; align-items: flex-start; gap: 10px;
+  padding: 12px 14px; border-radius: 11px;
+  background: rgba(251,191,36,.06); border: 1px solid rgba(251,191,36,.2);
+  margin-bottom: 14px;
+  font-size: 12px; color: var(--gold); line-height: 1.5;
+}
+.unassigned-list { display: flex; flex-direction: column; gap: 6px; }
+.ua-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 14px;
+  background: var(--s1); border: 1px solid rgba(251,191,36,.15);
+  border-left: 3px solid rgba(251,191,36,.4);
+  border-radius: 11px; cursor: pointer;
+  transition: border-color .15s;
+}
+.ua-row:hover { border-color: rgba(251,191,36,.3); }
+.ua-time { font-family: 'Sora', sans-serif; font-size: 14px; font-weight: 700; color: var(--gold); min-width: 52px; flex-shrink: 0; }
+.ua-av {
+  width: 36px; height: 36px; border-radius: 50%;
+  background: rgba(251,191,36,.1); color: var(--gold);
+  font-size: 14px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.ua-info { flex: 1; min-width: 0; }
+.ua-name { font-size: 13px; font-weight: 700; color: var(--text); }
+.ua-svc  { font-size: 11.5px; color: var(--muted); margin-top: 2px; }
+.btn-assign {
+  padding: 6px 13px; border-radius: 9px;
+  background: rgba(251,191,36,.1); color: var(--gold);
+  border: 1px solid rgba(251,191,36,.25);
+  font-size: 12px; font-weight: 700; cursor: pointer;
+  font-family: 'Inter', sans-serif; white-space: nowrap;
+  transition: background .15s;
+  flex-shrink: 0;
+}
+.btn-assign:hover { background: rgba(251,191,36,.2); }
+
+/* ─────────────────────────────────────────────
+   TAB 4 — STAFF (accordéon)
+───────────────────────────────────────────── */
+.staff-list { display: flex; flex-direction: column; gap: 6px; }
+
+.staff-accordion {
+  background: var(--s1); border: 1px solid var(--border);
+  border-radius: 13px; overflow: hidden;
+  transition: border-color .15s;
+}
+.staff-accordion:hover { border-color: var(--border2); }
+.staff-accordion.open { border-color: var(--border2); }
+
+.sa-header {
+  display: flex; align-items: center; gap: 11px;
+  padding: 13px 16px; cursor: pointer;
+  user-select: none;
+}
+.sa-av {
+  width: 38px; height: 38px; border-radius: 50%;
+  font-size: 15px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.sa-info { flex: 1; min-width: 0; }
+.sa-name { font-size: 13px; font-weight: 700; color: var(--text); }
+.sa-sub  { font-size: 11.5px; color: var(--muted); margin-top: 2px; }
+.sa-dot  { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+.sa-count {
+  font-size: 11px; font-weight: 700; color: var(--muted);
+  background: rgba(0,0,0,.06); border-radius: 10px;
+  padding: 2px 8px; flex-shrink: 0;
+}
+.sa-chevron { color: var(--light); transition: transform .2s; flex-shrink: 0; }
+.staff-accordion.open .sa-chevron { transform: rotate(180deg); }
+
+.sa-body { display: none; border-top: 1px solid var(--border); }
+.staff-accordion.open .sa-body { display: block; }
+
+.sa-appt-list { display: flex; flex-direction: column; }
+.sa-appt-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+  transition: background .1s;
+}
+.sa-appt-row:last-child { border-bottom: none; }
+.sa-appt-row:hover { background: rgba(0,0,0,.02); }
+.sa-appt-row.current { background: rgba(168,129,10,.05); }
+
+.sa-time { font-family: 'Sora', sans-serif; font-size: 12px; font-weight: 700; color: var(--muted); min-width: 75px; flex-shrink: 0; }
+.sa-client { flex: 1; min-width: 0; }
+.sa-cname { font-size: 12.5px; font-weight: 700; color: var(--text); }
+.sa-csvc  { font-size: 11px; color: var(--muted); margin-top: 1px; }
+.sa-dur   { font-size: 10px; font-weight: 700; color: var(--light); background: rgba(0,0,0,.04); border: 1px solid var(--border); border-radius: 5px; padding: 2px 7px; flex-shrink: 0; }
+.sa-appt-badge { flex-shrink: 0; }
+
+/* ─────────────────────────────────────────────
+   MODAL — composant générique
+───────────────────────────────────────────── */
+.modal-overlay {
+  position: fixed; inset: 0; z-index: 100;
+  background: rgba(20,16,8,.45);
+  backdrop-filter: blur(4px);
+  display: flex; align-items: center; justify-content: center;
+  padding: 20px;
+  opacity: 0; pointer-events: none;
+  transition: opacity .2s;
+}
+.modal-overlay.open { opacity: 1; pointer-events: all; }
+
+.modal {
+  background: var(--s1);
+  border: 1px solid var(--border2);
+  border-radius: 20px;
+  box-shadow: 0 24px 64px rgba(0,0,0,.18), 0 4px 16px rgba(0,0,0,.08);
+  width: 520px; max-width: 100%;
+  max-height: 90vh;
+  display: flex; flex-direction: column;
+  transform: translateY(12px);
+  transition: transform .2s;
+}
+.modal-overlay.open .modal { transform: translateY(0); }
+
+/* Header */
+.modal-header {
+  display: flex; align-items: center; gap: 10px;
+  padding: 20px 24px 18px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.modal-header-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--p); box-shadow: 0 0 8px var(--pglow);
+  flex-shrink: 0;
+}
+.modal-title {
+  font-family: 'Sora', sans-serif;
+  font-size: 16px; font-weight: 700; color: var(--text);
+  flex: 1;
+}
+.modal-close {
+  width: 32px; height: 32px; border-radius: 9px;
+  background: transparent; border: 1px solid var(--border);
+  color: var(--muted); cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all .15s; flex-shrink: 0;
+}
+.modal-close:hover { background: rgba(0,0,0,.05); border-color: var(--border2); color: var(--text); }
+
+/* Body */
+.modal-body {
+  flex: 1; overflow-y: auto; padding: 20px 24px;
+  display: flex; flex-direction: column; gap: 20px;
+}
+
+/* Section label */
+.form-label {
+  font-size: 10.5px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .07em; color: var(--light);
+  margin-bottom: 8px; display: block;
+}
+
+/* Input */
+.form-input {
+  width: 100%; padding: 10px 14px;
+  background: var(--bg); border: 1px solid var(--border2);
+  border-radius: 11px; color: var(--text);
+  font-family: 'Inter', sans-serif; font-size: 13px;
+  outline: none; transition: border-color .15s, box-shadow .15s;
+}
+.form-input::placeholder { color: var(--light); }
+.form-input:focus {
+  border-color: var(--p);
+  box-shadow: 0 0 0 3px var(--pglow);
+}
+
+/* Client trouvé */
+.client-found {
+  display: flex; align-items: center; gap: 11px;
+  padding: 11px 14px;
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: 12px; margin-top: 8px;
+}
+.client-found-av {
+  width: 36px; height: 36px; border-radius: 50%;
+  background: rgba(168,129,10,.15); color: var(--p);
+  font-size: 14px; font-weight: 800;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.client-found-info { flex: 1; min-width: 0; }
+.client-found-name { font-size: 13px; font-weight: 700; color: var(--text); }
+.client-found-meta { font-size: 11px; color: var(--muted); margin-top: 2px; }
+.client-found-check {
+  width: 22px; height: 22px; border-radius: 50%;
+  background: rgba(21,128,61,.12); color: var(--green);
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+
+/* Nouveau client chip */
+.client-new-chip {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 4px 10px; border-radius: 20px;
+  background: rgba(168,129,10,.1); color: var(--p);
+  border: 1px solid rgba(168,129,10,.25);
+  font-size: 11px; font-weight: 700; margin-top: 8px;
+}
+
+/* Service selector */
+.service-list { display: flex; flex-direction: column; gap: 6px; }
+
+.service-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 11px 14px;
+  background: var(--bg); border: 1.5px solid var(--border);
+  border-radius: 12px; cursor: pointer;
+  transition: border-color .15s, background .15s;
+  user-select: none;
+}
+.service-item:hover { border-color: var(--border2); }
+.service-item.selected {
+  border-color: var(--p);
+  background: rgba(168,129,10,.05);
+}
+
+.si-check {
+  width: 20px; height: 20px; border-radius: 6px;
+  border: 1.5px solid var(--border2);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; transition: all .15s;
+  color: transparent;
+}
+.service-item.selected .si-check {
+  background: var(--p); border-color: var(--p); color: #fff;
+}
+.si-info { flex: 1; min-width: 0; }
+.si-name { font-size: 13px; font-weight: 600; color: var(--text); }
+.si-meta { font-size: 11px; color: var(--muted); margin-top: 2px; }
+.si-price { font-size: 12px; font-weight: 700; color: var(--p); flex-shrink: 0; }
+
+/* Staff picker (per service) */
+.staff-picker {
+  display: flex; flex-wrap: wrap; gap: 6px;
+  padding: 10px 14px 12px 46px;
+  border-top: 1px solid var(--border);
+}
+.staff-pill {
+  display: flex; align-items: center; gap: 5px;
+  padding: 5px 11px; border-radius: 20px;
+  background: var(--s2); border: 1px solid var(--border);
+  font-size: 11px; font-weight: 600; color: var(--muted);
+  cursor: pointer; transition: all .15s;
+}
+.staff-pill:hover { border-color: var(--border2); color: var(--text); }
+.staff-pill.picked {
+  background: rgba(168,129,10,.12);
+  border-color: var(--p); color: var(--p);
+}
+.staff-pill-dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--green); flex-shrink: 0;
+}
+.staff-pill.picked .staff-pill-dot { background: var(--p); }
+
+/* Footer */
+.modal-footer {
+  display: flex; align-items: center; justify-content: flex-end; gap: 8px;
+  padding: 16px 24px;
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.btn-modal-cancel {
+  padding: 9px 18px; border-radius: 11px;
+  background: transparent; border: 1px solid var(--border2);
+  color: var(--muted); font-family: 'Inter', sans-serif;
+  font-size: 13px; font-weight: 600; cursor: pointer;
+  transition: all .15s;
+}
+.btn-modal-cancel:hover { background: rgba(0,0,0,.04); color: var(--text); }
+.btn-modal-confirm {
+  padding: 9px 22px; border-radius: 11px;
+  background: var(--p); color: #fff; border: none;
+  font-family: 'Inter', sans-serif;
+  font-size: 13px; font-weight: 700; cursor: pointer;
+  box-shadow: 0 0 18px var(--pglow);
+  transition: background .15s, transform .1s;
+}
+.btn-modal-confirm:hover { background: var(--p2); transform: translateY(-1px); }
+
+/* Divider */
+.form-divider {
+  height: 1px; background: var(--border); margin: 2px 0;
+}
+
+/* ── Bouton secondaire modal (Modifier) ── */
+.btn-modal-edit {
+  padding: 9px 18px; border-radius: 11px;
+  background: transparent; border: 1px solid var(--border2);
+  color: var(--text); font-family: 'Inter', sans-serif;
+  font-size: 13px; font-weight: 600; cursor: pointer;
+  transition: all .15s; margin-right: auto;
+}
+.btn-modal-edit:hover { background: var(--s2); }
+.btn-modal-noshow {
+  padding: 9px 18px; border-radius: 11px;
+  background: var(--red-s); border: 1px solid rgba(220,38,38,.2);
+  color: var(--red); font-family: 'Inter', sans-serif;
+  font-size: 13px; font-weight: 600; cursor: pointer;
+  transition: all .15s;
+}
+.btn-modal-noshow:hover { background: rgba(220,38,38,.18); }
+
+/* ── RDV detail modal ── */
+.rdv-detail-hero {
+  display: flex; align-items: center; gap: 14px;
+  padding: 20px 24px; border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.rdv-detail-av {
+  width: 46px; height: 46px; border-radius: 50%;
+  background: var(--gold-s); border: 1.5px solid var(--border2);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 17px; font-weight: 800; color: var(--p); flex-shrink: 0;
+}
+.rdv-detail-name { font-size: 15px; font-weight: 800; color: var(--text); }
+.rdv-detail-meta { font-size: 11.5px; color: var(--muted); margin-top: 2px; }
+.rdv-info-grid {
+  display: flex; flex-direction: column; gap: 0;
+}
+.rdv-info-row {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  padding: 10px 0; border-bottom: 1px solid var(--border);
+  gap: 16px;
+}
+.rdv-info-row:last-child { border-bottom: none; }
+.rdv-info-label { font-size: 11.5px; font-weight: 600; color: var(--muted); flex-shrink: 0; }
+.rdv-info-val { font-size: 12.5px; font-weight: 600; color: var(--text); text-align: right; }
+.rdv-amount-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 24px; border-top: 1px solid var(--border);
+  background: var(--s2); border-radius: 0 0 18px 18px;
+}
+.rdv-amount-label { font-size: 12px; font-weight: 600; color: var(--muted); }
+.rdv-amount-val { font-size: 16px; font-weight: 800; color: var(--p); }
+
+/* Plan-row clickable */
+.plan-row { cursor: pointer; }
+
+/* ── Progress bar in staff chip ── */
+.sc-progress {
+  height: 3px; border-radius: 2px; background: var(--border2);
+  margin-top: 3px; width: 80px; overflow: hidden;
+}
+.sc-progress-fill { height: 100%; border-radius: 2px; background: var(--p); transition: width .3s; }
+
+/* Absent banner inside accordion */
+.sa-absent-banner {
+  display: flex; align-items: center; gap: 8px;
+  padding: 12px 16px; color: var(--muted); font-size: 12px;
+}
+</style>
+</head>
+<body>
+
+<!-- ── TOPBAR ── -->
+<div class="topbar">
+  <div class="topbar-left">
+    <div class="topbar-title">
+      <div class="topbar-dot"></div>
+      Aujourd'hui
+    </div>
+    <div class="topbar-date">Lundi 19 mai 2026 &nbsp;<span class="topbar-time">· 14:43</span></div>
+  </div>
+
+  <div class="topbar-stats">
+    <div class="stat-chip c-orange">
+      <span class="num">3</span> En attente
+    </div>
+    <div class="stat-chip c-blue">
+      <span class="num">7</span> En cours
+    </div>
+    <div class="stat-chip c-green">
+      <span class="num">16</span> Terminés
+    </div>
+    <div class="stat-chip c-muted">
+      <span class="num">14</span> RDV
+    </div>
+    <div class="stat-chip c-gold">
+      <span class="num">2 340</span> MAD
+    </div>
+  </div>
+
+  <div class="topbar-right">
+    <button class="btn-outline">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      Agenda
+    </button>
+    <button class="btn-primary" onclick="openModal('modal-walkin')">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Sans RDV
+    </button>
+  </div>
+</div>
+
+<!-- ── STAFF STRIP ── -->
+<div class="staff-strip">
+  <div class="staff-chip">
+    <div class="sc-av a0">A</div>
+    <div class="sc-info">
+      <div class="sc-name">Ahlam</div>
+      <div class="sc-status free">Libre</div>
+    </div>
+    <div class="sc-dot dot-free"></div>
+  </div>
+  <div class="staff-chip">
+    <div class="sc-av a1">H</div>
+    <div class="sc-info">
+      <div class="sc-name">Hicham</div>
+      <div class="sc-status busy">En cours · 12min</div>
+      <div class="sc-progress"><div class="sc-progress-fill" style="width:65%"></div></div>
+    </div>
+    <div class="sc-dot dot-busy"></div>
+  </div>
+  <div class="staff-chip">
+    <div class="sc-av a2">R</div>
+    <div class="sc-info">
+      <div class="sc-name">Rachida</div>
+      <div class="sc-status free">Libre</div>
+    </div>
+    <div class="sc-dot dot-free"></div>
+  </div>
+  <div class="staff-chip">
+    <div class="sc-av a3">K</div>
+    <div class="sc-info">
+      <div class="sc-name">Khadija</div>
+      <div class="sc-status loaded">Chargée · 3min</div>
+      <div class="sc-progress"><div class="sc-progress-fill" style="width:90%"></div></div>
+    </div>
+    <div class="sc-dot dot-loaded"></div>
+  </div>
+  <div class="staff-chip">
+    <div class="sc-av a1">Az</div>
+    <div class="sc-info">
+      <div class="sc-name">Azhaar</div>
+      <div class="sc-status busy">En cours · 8min</div>
+      <div class="sc-progress"><div class="sc-progress-fill" style="width:45%"></div></div>
+    </div>
+    <div class="sc-dot dot-busy"></div>
+  </div>
+  <div class="staff-chip">
+    <div class="sc-av a2">Ra</div>
+    <div class="sc-info">
+      <div class="sc-name">Rachid</div>
+      <div class="sc-status free">Libre</div>
+    </div>
+    <div class="sc-dot dot-free"></div>
+  </div>
+  <div class="staff-chip absent">
+    <div class="sc-av a3">M</div>
+    <div class="sc-info">
+      <div class="sc-name">Marouane</div>
+      <div class="sc-status absent">Congé</div>
+    </div>
+    <div class="sc-dot dot-absent"></div>
+  </div>
+  <div class="staff-chip">
+    <div class="sc-av a0">Sa</div>
+    <div class="sc-info">
+      <div class="sc-name">Salma</div>
+      <div class="sc-status busy">En cours · 20min</div>
+      <div class="sc-progress"><div class="sc-progress-fill" style="width:25%"></div></div>
+    </div>
+    <div class="sc-dot dot-busy"></div>
+  </div>
+</div>
+
+<!-- ── TABS BAR ── -->
+<div class="tabs-bar">
+  <button class="tab-btn active" onclick="switchTab('queue', this)">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+    File d'attente
+    <span class="tab-badge active-badge">3</span>
+  </button>
+  <button class="tab-btn" onclick="switchTab('planning', this)">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+    Planning du jour
+    <span class="tab-badge">14</span>
+  </button>
+  <button class="tab-btn" onclick="switchTab('unassigned', this)">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+    Non affectés
+    <span class="tab-badge warn">2</span>
+  </button>
+  <button class="tab-btn" onclick="switchTab('staff', this)">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+    Staff
+    <span class="tab-badge">8</span>
+  </button>
+</div>
+
+<!-- ── TAB CONTENT ── -->
+<div class="tab-content">
+
+  <!-- TAB 1 : File d'attente -->
+  <div id="tab-queue" class="tab-panel active">
+    <div class="queue-list">
+
+      <div class="queue-row">
+        <div class="q-rank">1</div>
+        <div class="q-av">A</div>
+        <div class="q-info">
+          <div class="q-name">Amina Micha</div>
+          <div class="q-svc">Coupe femme · 45min</div>
+        </div>
+        <div class="q-meta">
+          <div class="q-arrival">Arrivée 14:30</div>
+          <div class="q-wait">8 min</div>
+        </div>
+        <button class="btn-serve">Servir →</button>
+        <button class="btn-del">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+        </button>
+      </div>
+
+      <div class="queue-row urgent">
+        <div class="q-rank">2</div>
+        <div class="q-av">H</div>
+        <div class="q-info">
+          <div class="q-name">
+            Hind Benali
+            <span class="flag">⚑</span>
+          </div>
+          <div class="q-svc">Brushing · 30min</div>
+        </div>
+        <div class="q-meta">
+          <div class="q-arrival">Arrivée 13:55</div>
+          <div class="q-wait long">28 min ⚠</div>
+        </div>
+        <button class="btn-serve">Servir →</button>
+        <button class="btn-del">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+        </button>
+      </div>
+
+      <div class="queue-row">
+        <div class="q-rank">3</div>
+        <div class="q-av">K</div>
+        <div class="q-info">
+          <div class="q-name">Karim Tazi</div>
+          <div class="q-svc">Pose gel mains · 60min</div>
+        </div>
+        <div class="q-meta">
+          <div class="q-arrival">Arrivée 14:45</div>
+          <div class="q-wait">2 min</div>
+        </div>
+        <button class="btn-serve">Servir →</button>
+        <button class="btn-del">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- TAB 2 : Planning du jour -->
+  <div id="tab-planning" class="tab-panel">
+    <div class="planning-list">
+
+      <div class="plan-walkin-sep">Sans RDV (walkins en cours)</div>
+
+      <div class="plan-row walkin" onclick="openRdvDetail(event,{av:'F',name:'Fatima Zahra',meta:'2 visites · Sans RDV',time:'14:00 – 15:30',svc:'Mèches complètes · 90 min',staff:'Hicham',source:'Accueil salon',amount:'350 MAD',note:'Préfère ammoniaque libre',status:'inprogress',badgeClass:'badge-green',statusLabel:'En cours'})">
+        <div>
+          <div class="p-time">14:00</div>
+          <span class="badge badge-walkin" style="font-size:9px;margin-top:3px">Sans RDV</span>
+        </div>
+        <div>
+          <div class="p-client">Fatima Zahra</div>
+          <div class="p-svc">Mèches complètes · 90min</div>
+        </div>
+        <div class="p-staff">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="7" r="4"/><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/></svg>
+          Hicham
+        </div>
+        <span class="badge badge-green">En cours</span>
+        <div class="p-actions">
+          <button class="btn-sm btn-finish" onclick="event.stopPropagation()">Terminer</button>
+        </div>
+      </div>
+
+      <div class="plan-row walkin" onclick="openRdvDetail(event,{av:'S',name:'Salma Tazi',meta:'1 visite · Sans RDV',time:'14:30 – 15:10',svc:'Pédicure simple · 40 min',staff:'Salma',source:'Accueil salon',amount:'120 MAD',status:'inprogress',badgeClass:'badge-green',statusLabel:'En cours'})">
+        <div>
+          <div class="p-time">14:30</div>
+          <span class="badge badge-walkin" style="font-size:9px;margin-top:3px">Sans RDV</span>
+        </div>
+        <div>
+          <div class="p-client">Salma Tazi</div>
+          <div class="p-svc">Pédicure simple · 40min</div>
+        </div>
+        <div class="p-staff">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="7" r="4"/><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/></svg>
+          Salma
+        </div>
+        <span class="badge badge-green">En cours</span>
+        <div class="p-actions">
+          <button class="btn-sm btn-finish" onclick="event.stopPropagation()">Terminer</button>
+        </div>
+      </div>
+
+      <div class="plan-walkin-sep">RDV planifiés — à venir</div>
+
+      <div class="plan-row" onclick="openRdvDetail(event,{av:'L',name:'Leila Benhay',meta:'3 visites · 06 61 23 45 67',time:'15:00 – 16:00',svc:'Coupe femme + Brushing · 60 min',staff:'Rachida',source:'WhatsApp',amount:'200 MAD',status:'planned',badgeClass:'badge-blue',statusLabel:'Planifié'})">
+        <div><div class="p-time">15:00</div></div>
+        <div>
+          <div class="p-client">Leila Benhay</div>
+          <div class="p-svc">Coupe femme + Brushing · 60min</div>
+        </div>
+        <div class="p-staff">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="7" r="4"/><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/></svg>
+          Rachida
+        </div>
+        <span class="badge badge-blue">Planifié</span>
+        <div class="p-actions">
+          <button class="btn-sm btn-arrive" onclick="event.stopPropagation()">Arrivée ✓</button>
+        </div>
+      </div>
+
+      <div class="plan-row" onclick="openRdvDetail(event,{av:'N',name:'Nadia Alami',meta:'5 visites · 06 55 78 90 12',time:'15:30 – 16:30',svc:'Pose gel mains · 60 min',staff:'Non assigné',source:'En ligne',amount:'180 MAD',status:'planned',badgeClass:'badge-blue',statusLabel:'Planifié'})">
+        <div><div class="p-time">15:30</div></div>
+        <div>
+          <div class="p-client">Nadia Alami</div>
+          <div class="p-svc">Pose gel mains · 60min</div>
+        </div>
+        <div class="p-staff">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="7" r="4"/><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/></svg>
+          —
+        </div>
+        <span class="badge badge-blue">Planifié</span>
+        <div class="p-actions">
+          <button class="btn-sm btn-arrive" onclick="event.stopPropagation()">Arrivée ✓</button>
+        </div>
+      </div>
+
+      <div class="plan-row" onclick="openRdvDetail(event,{av:'S',name:'Sara Moussaoui',meta:'1 visite · 06 70 34 56 89',time:'16:00 – 16:45',svc:'Coupe femme · 45 min',staff:'Ahlam',source:'Téléphone',amount:'120 MAD',status:'planned',badgeClass:'badge-blue',statusLabel:'Planifié'})">
+        <div><div class="p-time">16:00</div></div>
+        <div>
+          <div class="p-client">Sara Moussaoui</div>
+          <div class="p-svc">Coupe femme · 45min</div>
+        </div>
+        <div class="p-staff">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="7" r="4"/><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/></svg>
+          Ahlam
+        </div>
+        <span class="badge badge-blue">Planifié</span>
+        <div class="p-actions">
+          <button class="btn-sm btn-arrive" onclick="event.stopPropagation()">Arrivée ✓</button>
+        </div>
+      </div>
+
+      <div class="plan-walkin-sep">Passés</div>
+
+      <div class="plan-row done" onclick="openRdvDetail(event,{av:'K',name:'Khadija Moussaoui',meta:'7 visites · 06 62 11 22 33',time:'13:00 – 13:45',svc:'Brushing · 45 min',staff:'Ahlam',source:'WhatsApp',amount:'120 MAD',status:'done',badgeClass:'badge-done',statusLabel:'Terminé'})">
+        <div><div class="p-time">13:00</div></div>
+        <div>
+          <div class="p-client">Khadija Moussaoui</div>
+          <div class="p-svc">Brushing · 45min</div>
+        </div>
+        <div class="p-staff">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="7" r="4"/><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/></svg>
+          Ahlam
+        </div>
+        <span class="badge badge-done">Terminé</span>
+        <div class="p-actions"></div>
+      </div>
+
+      <div class="plan-row done" onclick="openRdvDetail(event,{av:'H',name:'Hanae Berrada',meta:'2 visites · 06 68 45 67 89',time:'12:30 – 14:30',svc:'Balayage · 120 min',staff:'Azhaar',source:'En ligne',amount:'450 MAD',note:'Allergie nickel signalée',status:'noshow',badgeClass:'badge-red',statusLabel:'No-show'})">
+        <div><div class="p-time">12:30</div></div>
+        <div>
+          <div class="p-client">Hanae Berrada</div>
+          <div class="p-svc">Balayage · 120min</div>
+        </div>
+        <div class="p-staff">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="7" r="4"/><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/></svg>
+          Azhaar
+        </div>
+        <span class="badge badge-red">No-show</span>
+        <div class="p-actions"></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- TAB 3 : Non affectés -->
+  <div id="tab-unassigned" class="tab-panel">
+    <div class="unassigned-notice">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="flex-shrink:0;margin-top:1px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      Ces RDV sont confirmés mais n'ont pas encore de collaborateur assigné. Pensez à les affecter avant l'heure prévue.
+    </div>
+
+    <div class="unassigned-list">
+
+      <div class="ua-row">
+        <div class="ua-time">15:30</div>
+        <div class="ua-av">N</div>
+        <div class="ua-info">
+          <div class="ua-name">Nadia Alami</div>
+          <div class="ua-svc">Pose gel mains · 60min</div>
+        </div>
+        <button class="btn-assign">Assigner →</button>
+      </div>
+
+      <div class="ua-row">
+        <div class="ua-time">16:00</div>
+        <div class="ua-av">S</div>
+        <div class="ua-info">
+          <div class="ua-name">Sara Moussaoui</div>
+          <div class="ua-svc">Coupe femme · 45min</div>
+        </div>
+        <button class="btn-assign">Assigner →</button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- TAB 4 : Staff -->
+  <div id="tab-staff" class="tab-panel">
+    <div class="staff-list">
+
+      <!-- Ahlam — Libre -->
+      <div class="staff-accordion" onclick="toggleAccordion(this)">
+        <div class="sa-header">
+          <div class="sa-av a0">A</div>
+          <div class="sa-info">
+            <div class="sa-name">Ahlam Niro</div>
+            <div class="sa-sub">Libre — prochain RDV à 16:00</div>
+          </div>
+          <div class="sa-dot dot-free"></div>
+          <span class="sa-count">2 RDV</span>
+          <svg class="sa-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="sa-body">
+          <div class="sa-appt-list">
+            <div class="sa-appt-row">
+              <div class="sa-time">13:00–13:45</div>
+              <div class="sa-client">
+                <div class="sa-cname">Khadija Moussaoui</div>
+                <div class="sa-csvc">Brushing</div>
+              </div>
+              <div class="sa-dur">45min</div>
+              <span class="badge badge-done sa-appt-badge">Terminé</span>
+            </div>
+            <div class="sa-appt-row">
+              <div class="sa-time">16:00–16:45</div>
+              <div class="sa-client">
+                <div class="sa-cname">Sara Moussaoui</div>
+                <div class="sa-csvc">Coupe femme</div>
+              </div>
+              <div class="sa-dur">45min</div>
+              <span class="badge badge-blue sa-appt-badge">Planifié</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Hicham — En cours -->
+      <div class="staff-accordion open" onclick="toggleAccordion(this)">
+        <div class="sa-header">
+          <div class="sa-av a1">H</div>
+          <div class="sa-info">
+            <div class="sa-name">Hicham Nounoui</div>
+            <div class="sa-sub">En cours · Mèches complètes · 12 min restants</div>
+          </div>
+          <div class="sa-dot dot-busy"></div>
+          <span class="sa-count">3 RDV</span>
+          <svg class="sa-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="sa-body">
+          <div class="sa-appt-list">
+            <div class="sa-appt-row current">
+              <div class="sa-time">14:00–15:30</div>
+              <div class="sa-client">
+                <div class="sa-cname">Fatima Zahra</div>
+                <div class="sa-csvc">Mèches complètes</div>
+              </div>
+              <div class="sa-dur">90min</div>
+              <span class="badge badge-green sa-appt-badge">En cours</span>
+            </div>
+            <div class="sa-appt-row">
+              <div class="sa-time">16:30–17:00</div>
+              <div class="sa-client">
+                <div class="sa-cname">Amina Micha</div>
+                <div class="sa-csvc">Coupe enfant</div>
+              </div>
+              <div class="sa-dur">30min</div>
+              <span class="badge badge-blue sa-appt-badge">Planifié</span>
+            </div>
+            <div class="sa-appt-row">
+              <div class="sa-time">12:30–14:30</div>
+              <div class="sa-client">
+                <div class="sa-cname">Hanae Berrada</div>
+                <div class="sa-csvc">Balayage</div>
+              </div>
+              <div class="sa-dur">120min</div>
+              <span class="badge badge-red sa-appt-badge">No-show</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Rachida — Libre -->
+      <div class="staff-accordion" onclick="toggleAccordion(this)">
+        <div class="sa-header">
+          <div class="sa-av a2">R</div>
+          <div class="sa-info">
+            <div class="sa-name">Rachida Mouga</div>
+            <div class="sa-sub">Libre — prochain RDV à 15:00</div>
+          </div>
+          <div class="sa-dot dot-free"></div>
+          <span class="sa-count">2 RDV</span>
+          <svg class="sa-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="sa-body">
+          <div class="sa-appt-list">
+            <div class="sa-appt-row">
+              <div class="sa-time">15:00–16:00</div>
+              <div class="sa-client">
+                <div class="sa-cname">Leila Benhay</div>
+                <div class="sa-csvc">Coupe + Brushing</div>
+              </div>
+              <div class="sa-dur">60min</div>
+              <span class="badge badge-blue sa-appt-badge">Planifié</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Khadija — Bientôt libre -->
+      <div class="staff-accordion" onclick="toggleAccordion(this)">
+        <div class="sa-header">
+          <div class="sa-av a3">K</div>
+          <div class="sa-info">
+            <div class="sa-name">Khadija Berreda</div>
+            <div class="sa-sub">Chargée · Pose gel mains · 3 min restants</div>
+          </div>
+          <div class="sa-dot dot-loaded"></div>
+          <span class="sa-count">2 RDV</span>
+          <svg class="sa-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="sa-body">
+          <div class="sa-appt-list">
+            <div class="sa-appt-row current">
+              <div class="sa-time">13:30–14:30</div>
+              <div class="sa-client">
+                <div class="sa-cname">Leila Benhay</div>
+                <div class="sa-csvc">Pose gel mains</div>
+              </div>
+              <div class="sa-dur">60min</div>
+              <span class="badge badge-green sa-appt-badge">En cours</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Marouane — Congé -->
+      <div class="staff-accordion" onclick="toggleAccordion(this)">
+        <div class="sa-header">
+          <div class="sa-av a1" style="opacity:.5">M</div>
+          <div class="sa-info" style="opacity:.5">
+            <div class="sa-name">Marouane Nimoure</div>
+            <div class="sa-sub">En congé aujourd'hui</div>
+          </div>
+          <div class="sa-dot dot-absent"></div>
+          <span class="sa-count" style="opacity:.4">0 RDV</span>
+          <svg class="sa-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="opacity:.4"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="sa-body">
+          <div class="sa-absent-banner">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            Congé du 19/05 au 21/05
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+<!-- ── MODAL : Sans RDV ── -->
+<div class="modal-overlay" id="modal-walkin" onclick="handleOverlayClick(event)">
+  <div class="modal">
+
+    <div class="modal-header">
+      <div class="modal-header-dot"></div>
+      <div class="modal-title">Nouveau sans-RDV</div>
+      <button class="modal-close" onclick="closeModal('modal-walkin')">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+
+    <div class="modal-body">
+
+      <!-- Section : Client -->
+      <div>
+        <label class="form-label">Client</label>
+        <input class="form-input" type="text" placeholder="Nom ou numéro de téléphone…"
+          oninput="handleClientSearch(this.value)" />
+
+        <!-- État : client trouvé -->
+        <div class="client-found" id="client-found-state" style="display:none">
+          <div class="client-found-av">H</div>
+          <div class="client-found-info">
+            <div class="client-found-name">Hind Benali</div>
+            <div class="client-found-meta">06 12 34 56 78 · 4 visites</div>
+          </div>
+          <div class="client-found-check">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+          </div>
+        </div>
+
+        <!-- État : nouveau client -->
+        <div id="client-new-state" style="display:none">
+          <span class="client-new-chip">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Nouveau client — nom sera demandé
+          </span>
+        </div>
+      </div>
+
+      <div class="form-divider"></div>
+
+      <!-- Section : Prestations -->
+      <div>
+        <label class="form-label">Prestations</label>
+        <div class="service-list">
+
+          <!-- Prestation 1 : sélectionnée + staff ouvert -->
+          <div>
+            <div class="service-item selected" onclick="toggleService(this)">
+              <div class="si-check">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+              </div>
+              <div class="si-info">
+                <div class="si-name">Coupe femme</div>
+                <div class="si-meta">45 min</div>
+              </div>
+              <div class="si-price">120 MAD</div>
+            </div>
+            <!-- Staff picker pour cette prestation -->
+            <div class="staff-picker">
+              <div class="staff-pill picked" onclick="togglePill(this)">
+                <div class="staff-pill-dot"></div>
+                Ahlam
+              </div>
+              <div class="staff-pill" onclick="togglePill(this)">
+                <div class="staff-pill-dot"></div>
+                Rachida
+              </div>
+              <div class="staff-pill" onclick="togglePill(this)">
+                <div class="staff-pill-dot" style="background:var(--muted)"></div>
+                Hicham
+              </div>
+            </div>
+          </div>
+
+          <!-- Prestation 2 : non sélectionnée -->
+          <div class="service-item" onclick="toggleService(this)">
+            <div class="si-check"></div>
+            <div class="si-info">
+              <div class="si-name">Brushing</div>
+              <div class="si-meta">30 min</div>
+            </div>
+            <div class="si-price">80 MAD</div>
+          </div>
+
+          <!-- Prestation 3 : non sélectionnée -->
+          <div class="service-item" onclick="toggleService(this)">
+            <div class="si-check"></div>
+            <div class="si-info">
+              <div class="si-name">Pose gel mains</div>
+              <div class="si-meta">60 min</div>
+            </div>
+            <div class="si-price">180 MAD</div>
+          </div>
+
+          <!-- Prestation 4 : non sélectionnée -->
+          <div class="service-item" onclick="toggleService(this)">
+            <div class="si-check"></div>
+            <div class="si-info">
+              <div class="si-name">Mèches complètes</div>
+              <div class="si-meta">90 min</div>
+            </div>
+            <div class="si-price">350 MAD</div>
+          </div>
+
+        </div>
+      </div>
+
+      <div class="form-divider"></div>
+
+      <!-- Section : Note -->
+      <div>
+        <label class="form-label">Note (optionnel)</label>
+        <input class="form-input" type="text" placeholder="Ex : allergie, préférence couleur…" />
+      </div>
+
+    </div><!-- /modal-body -->
+
+    <div class="modal-footer">
+      <button class="btn-modal-cancel" onclick="closeModal('modal-walkin')">Annuler</button>
+      <button class="btn-modal-confirm">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+        Confirmer
+      </button>
+    </div>
+
+  </div><!-- /modal -->
+</div><!-- /modal-overlay -->
+
+<!-- ── MODAL : Détail RDV ── -->
+<div class="modal-overlay" id="modal-rdv-detail" onclick="handleOverlayClick(event)">
+  <div class="modal" style="max-width:440px">
+
+    <div class="modal-header">
+      <div class="modal-header-dot" id="rdv-header-dot"></div>
+      <div class="modal-title">Rendez-vous</div>
+      <button class="modal-close" onclick="closeModal('modal-rdv-detail')">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+
+    <!-- Hero client -->
+    <div class="rdv-detail-hero">
+      <div class="rdv-detail-av" id="rdv-av">?</div>
+      <div style="flex:1;min-width:0">
+        <div class="rdv-detail-name" id="rdv-name">—</div>
+        <div class="rdv-detail-meta" id="rdv-meta">—</div>
+      </div>
+      <span id="rdv-status-badge" class="badge">—</span>
+    </div>
+
+    <div class="modal-body" style="padding-top:0;padding-bottom:0">
+      <div class="rdv-info-grid">
+        <div class="rdv-info-row">
+          <span class="rdv-info-label">Heure</span>
+          <span class="rdv-info-val" id="rdv-time">—</span>
+        </div>
+        <div class="rdv-info-row">
+          <span class="rdv-info-label">Prestation</span>
+          <span class="rdv-info-val" id="rdv-svc">—</span>
+        </div>
+        <div class="rdv-info-row">
+          <span class="rdv-info-label">Collaborateur</span>
+          <span class="rdv-info-val" id="rdv-staff">—</span>
+        </div>
+        <div class="rdv-info-row">
+          <span class="rdv-info-label">Source</span>
+          <span class="rdv-info-val" id="rdv-source">—</span>
+        </div>
+        <div class="rdv-info-row" id="rdv-note-row" style="display:none">
+          <span class="rdv-info-label">Note</span>
+          <span class="rdv-info-val" id="rdv-note">—</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Montant -->
+    <div class="rdv-amount-row">
+      <span class="rdv-amount-label">Total estimé</span>
+      <span class="rdv-amount-val" id="rdv-amount">—</span>
+    </div>
+
+    <!-- Actions dynamiques selon statut -->
+    <div class="modal-footer" id="rdv-footer-actions"></div>
+
+  </div>
+</div><!-- /modal-rdv-detail -->
+
+<script>
+function switchTab(name, btn) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'))
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'))
+  document.getElementById('tab-' + name).classList.add('active')
+  btn.classList.add('active')
+}
+
+function toggleAccordion(el) {
+  el.classList.toggle('open')
+}
+
+function openModal(id) {
+  document.getElementById(id).classList.add('open')
+  document.body.style.overflow = 'hidden'
+}
+
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open')
+  document.body.style.overflow = ''
+}
+
+function handleOverlayClick(e) {
+  if (e.target === e.currentTarget) closeModal(e.currentTarget.id)
+}
+
+function handleClientSearch(val) {
+  const found = document.getElementById('client-found-state')
+  const newC  = document.getElementById('client-new-state')
+  if (val.length >= 4) {
+    // Simule : si commence par "0" → client trouvé, sinon nouveau
+    if (val.startsWith('0') || val.toLowerCase().startsWith('hi')) {
+      found.style.display = 'flex'
+      newC.style.display  = 'none'
+    } else {
+      found.style.display = 'none'
+      newC.style.display  = 'block'
+    }
+  } else {
+    found.style.display = 'none'
+    newC.style.display  = 'none'
+  }
+}
+
+function toggleService(el) {
+  el.classList.toggle('selected')
+  // Afficher/masquer le staff-picker du parent
+  const picker = el.parentElement.querySelector('.staff-picker')
+  if (picker) picker.style.display = el.classList.contains('selected') ? 'flex' : 'none'
+}
+
+function togglePill(el) {
+  // Un seul staff sélectionné à la fois par prestation
+  el.closest('.staff-picker').querySelectorAll('.staff-pill').forEach(p => p.classList.remove('picked'))
+  el.classList.add('picked')
+}
+
+function openRdvDetail(e, d) {
+  e.stopPropagation()
+
+  // Remplir les champs
+  document.getElementById('rdv-av').textContent    = d.av
+  document.getElementById('rdv-name').textContent  = d.name
+  document.getElementById('rdv-meta').textContent  = d.meta
+  document.getElementById('rdv-time').textContent  = d.time
+  document.getElementById('rdv-svc').textContent   = d.svc
+  document.getElementById('rdv-staff').textContent = d.staff
+  document.getElementById('rdv-source').textContent= d.source
+  document.getElementById('rdv-amount').textContent= d.amount
+
+  // Note optionnelle
+  const noteRow = document.getElementById('rdv-note-row')
+  if (d.note) {
+    document.getElementById('rdv-note').textContent = d.note
+    noteRow.style.display = ''
+  } else {
+    noteRow.style.display = 'none'
+  }
+
+  // Badge statut
+  const badge = document.getElementById('rdv-status-badge')
+  badge.className = 'badge ' + d.badgeClass
+  badge.textContent = d.statusLabel
+
+  // Couleur du point header
+  const dotColors = { planned:'var(--blue)', inprogress:'var(--p)', done:'var(--light)', noshow:'var(--red)' }
+  document.getElementById('rdv-header-dot').style.background = dotColors[d.status] || 'var(--p)'
+
+  // Actions selon statut
+  const footer = document.getElementById('rdv-footer-actions')
+  if (d.status === 'planned') {
+    footer.innerHTML = `
+      <button class="btn-modal-edit">Modifier</button>
+      <button class="btn-modal-noshow">No-show</button>
+      <button class="btn-modal-confirm">Arrivée ✓</button>`
+  } else if (d.status === 'inprogress') {
+    footer.innerHTML = `
+      <button class="btn-modal-edit">Modifier</button>
+      <button class="btn-modal-cancel" onclick="closeModal('modal-rdv-detail')">Annuler RDV</button>
+      <button class="btn-modal-confirm">Terminer ✓</button>`
+  } else {
+    footer.innerHTML = `
+      <button class="btn-modal-cancel" onclick="closeModal('modal-rdv-detail')">Fermer</button>`
+  }
+
+  openModal('modal-rdv-detail')
+}
+
+// Keyboard: Escape ferme le modal ouvert
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    document.querySelectorAll('.modal-overlay.open').forEach(m => closeModal(m.id))
+  }
+})
+</script>
+</body>
+</html>

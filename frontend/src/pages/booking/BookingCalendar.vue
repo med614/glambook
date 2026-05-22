@@ -21,8 +21,7 @@ const services = ref([])
 const staffList = ref([])
 const loading = ref(true)
 
-const selectedService = ref(null)
-const selectedStaff = ref(null) // null = pas de préférence
+const selectedServices = ref([]) // array of { ...service, staffId: null }
 const calendarMonth = ref(new Date().toISOString().slice(0, 7))
 const availableDays = ref([])
 const selectedDate = ref(null)
@@ -54,6 +53,44 @@ onMounted(async () => {
   }
 })
 
+// ── service selection ───────────────────────────────────────────────────────
+function isSelected(svc) {
+  return selectedServices.value.some(s => s.id === svc.id)
+}
+
+function toggleService(svc) {
+  const idx = selectedServices.value.findIndex(s => s.id === svc.id)
+  if (idx === -1) {
+    selectedServices.value.push({ ...svc, staffId: null })
+  } else {
+    selectedServices.value.splice(idx, 1)
+  }
+}
+
+function removeService(svc) {
+  selectedServices.value = selectedServices.value.filter(s => s.id !== svc.id)
+}
+
+function setStaffForService(svcId, staffId) {
+  const entry = selectedServices.value.find(s => s.id === svcId)
+  if (entry) entry.staffId = staffId
+}
+
+function staffOptionsFor(svc) {
+  if (!svc.category_id) return staffList.value
+  return staffList.value.filter(s =>
+    s.staff_categories?.some(sc => sc.category_id === svc.category_id)
+  )
+}
+
+const totalPrice = computed(() =>
+  selectedServices.value.reduce((sum, s) => sum + (s.price || 0), 0)
+)
+
+const totalDuration = computed(() =>
+  selectedServices.value.reduce((sum, s) => sum + (s.duration_minutes || 0), 0)
+)
+
 // ── calendar ───────────────────────────────────────────────────────────────
 const DAY_LABELS = ['Lu', 'Ma', 'Me', 'Je', 'Ve', 'Sa', 'Di']
 
@@ -61,7 +98,6 @@ const calendarDays = computed(() => {
   const [y, m] = calendarMonth.value.split('-').map(Number)
   const firstDay = new Date(y, m - 1, 1)
   const lastDay = new Date(y, m, 0)
-  // Monday-first: 0=Mon…6=Sun
   let startDow = firstDay.getDay() - 1
   if (startDow < 0) startDow = 6
   const days = []
@@ -84,10 +120,11 @@ function isAvailable(d) { return d && availableDays.value.includes(d) }
 function isPast(d) { return d && d < today }
 
 async function loadAvailableDays() {
-  if (!selectedService.value) return
+  if (!selectedServices.value.length) return
   availableDays.value = []
-  const staffParam = selectedStaff.value ? `&staffId=${selectedStaff.value.id}` : ''
-  const res = await fetch(`${API}/booking/${orgId}/available-days?month=${calendarMonth.value}&serviceId=${selectedService.value.id}${staffParam}`)
+  const first = selectedServices.value[0]
+  const staffParam = first.staffId ? `&staffId=${first.staffId}` : ''
+  const res = await fetch(`${API}/booking/${orgId}/available-days?month=${calendarMonth.value}&serviceId=${first.id}${staffParam}`)
   availableDays.value = await res.json()
 }
 
@@ -109,8 +146,9 @@ async function selectDate(d) {
   selectedDate.value = d
   selectedSlot.value = null
   slotsLoading.value = true
-  const staffParam = selectedStaff.value ? `&staffId=${selectedStaff.value.id}` : ''
-  const res = await fetch(`${API}/booking/${orgId}/slots?date=${d}&serviceId=${selectedService.value.id}${staffParam}`)
+  const first = selectedServices.value[0]
+  const staffParam = first.staffId ? `&staffId=${first.staffId}` : ''
+  const res = await fetch(`${API}/booking/${orgId}/slots?date=${d}&serviceId=${first.id}${staffParam}`)
   const data = await res.json()
   slots.value = data.slots || []
   slotsLoading.value = false
@@ -118,7 +156,7 @@ async function selectDate(d) {
 
 // ── flow ───────────────────────────────────────────────────────────────────
 async function goToDatetime() {
-  if (!selectedService.value) return
+  if (!selectedServices.value.length) return
   step.value = 'datetime'
   calendarMonth.value = today.slice(0, 7)
   await loadAvailableDays()
@@ -142,8 +180,10 @@ async function confirmBooking() {
         phone: clientPhone,
         date: selectedDate.value,
         time: selectedSlot.value,
-        serviceId: selectedService.value.id,
-        staffId: selectedStaff.value?.id || null
+        services: selectedServices.value.map(s => ({
+          serviceId: s.id,
+          staffId: s.staffId || null
+        }))
       })
     })
     const data = await res.json()
@@ -161,15 +201,32 @@ function formatDate(d) {
   return new Date(d + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })
 }
 
-// Filtered staff: only those competent for selected service
-const filteredStaff = computed(() => {
-  if (!selectedService.value) return staffList.value
-  const catId = selectedService.value.category_id
-  if (!catId) return staffList.value
-  return staffList.value.filter(s =>
-    s.staff_categories?.some(sc => sc.category_id === catId)
-  )
+// ── services groupés par catégorie ─────────────────────────────────────────
+const servicesByCategory = computed(() => {
+  const groups = []
+  const seen = new Set()
+
+  for (const svc of services.value) {
+    const cat = Array.isArray(svc.category) ? svc.category[0] : svc.category
+    const catId   = cat?.id   || '__none__'
+    const catName = cat?.name || 'Autres'
+    const catColor = cat?.color || '#94a3b8'
+
+    if (!seen.has(catId)) {
+      seen.add(catId)
+      groups.push({ id: catId, name: catName, color: catColor, services: [] })
+    }
+    groups.find(g => g.id === catId).services.push(svc)
+  }
+  return groups
 })
+
+const openCategory = ref(null)
+
+function toggleCategory(catId) {
+  openCategory.value = openCategory.value === catId ? null : catId
+}
+
 </script>
 
 <template>
@@ -213,62 +270,95 @@ const filteredStaff = computed(() => {
           </div>
         </div>
 
-        <!-- STEP 1 : Service -->
+        <!-- STEP 1 : Services -->
         <template v-if="step === 'service'">
-          <div class="bk-section-title">Choisissez une prestation</div>
+          <div class="bk-section-title">Choisissez vos prestations</div>
 
-          <div class="svc-list">
-            <button
-              v-for="s in services" :key="s.id"
-              :class="['svc-item', selectedService?.id === s.id && 'selected']"
-              @click="selectedService = s"
-            >
-              <div class="svc-info">
-                <div class="svc-name">{{ s.name }}</div>
-                <div class="svc-duration" v-if="s.duration_minutes">{{ s.duration_minutes }} min</div>
+          <!-- Catégories -->
+          <div class="cat-list">
+            <div v-for="cat in servicesByCategory" :key="cat.id" class="cat-group">
+
+              <!-- Header catégorie -->
+              <button
+                class="cat-header"
+                :class="{ 'cat-open': openCategory === cat.id }"
+                :style="{ '--cat-color': cat.color }"
+                @click="toggleCategory(cat.id)"
+              >
+                <span class="cat-dot" :style="{ background: cat.color }"></span>
+                <span class="cat-name">{{ cat.name }}</span>
+                <span class="cat-count">{{ cat.services.length }} prestation{{ cat.services.length > 1 ? 's' : '' }}</span>
+                <svg class="cat-chevron" :class="{ open: openCategory === cat.id }" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+              </button>
+
+              <!-- Services de la catégorie -->
+              <div v-if="openCategory === cat.id" class="svc-list cat-body">
+                <button
+                  v-for="s in cat.services" :key="s.id"
+                  :class="['svc-item', isSelected(s) && 'selected']"
+                  @click="toggleService(s)"
+                >
+                  <div class="svc-info">
+                    <div class="svc-name">{{ s.name }}</div>
+                    <div class="svc-duration" v-if="s.duration_minutes">{{ s.duration_minutes }} min</div>
+                  </div>
+                  <div class="svc-price" v-if="s.price">{{ s.price }} MAD</div>
+                  <div class="svc-check" v-if="isSelected(s)">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+                  </div>
+                  <div class="svc-add-icon" v-else>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                  </div>
+                </button>
               </div>
-              <div class="svc-price" v-if="s.price">{{ s.price }} MAD</div>
-              <div class="svc-check" v-if="selectedService?.id === s.id">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
-              </div>
-            </button>
+
+            </div>
           </div>
 
-          <!-- Staff preference -->
-          <div v-if="selectedService" class="bk-section-title" style="margin-top:20px;">
-            Préférence collaborateur
-            <span style="font-weight:400;color:#94a3b8;font-size:11px;"> (optionnel)</span>
-          </div>
-          <div v-if="selectedService" class="staff-list">
-            <button
-              :class="['staff-item', selectedStaff === null && 'selected']"
-              @click="selectedStaff = null"
-            >
-              <div class="staff-avatar" style="background:#e2e8f0;color:#64748b;">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+          <!-- Panier prestations sélectionnées -->
+          <div v-if="selectedServices.length" class="basket">
+            <div class="basket-header">
+              <span class="basket-title">Prestations sélectionnées</span>
+              <span class="basket-total">{{ totalPrice }} MAD · {{ totalDuration }} min</span>
+            </div>
+            <div class="basket-items">
+              <div v-for="entry in selectedServices" :key="entry.id" class="basket-item-block">
+                <!-- Ligne prestation -->
+                <div class="basket-item">
+                  <span class="basket-item-name">{{ entry.name }}</span>
+                  <span class="basket-item-price" v-if="entry.price">{{ entry.price }} MAD</span>
+                  <button class="basket-remove" @click="removeService(entry)">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                  </button>
+                </div>
+                <!-- Chips staff par prestation -->
+                <div class="staff-chips">
+                  <button
+                    :class="['staff-chip', entry.staffId === null && 'active']"
+                    @click="setStaffForService(entry.id, null)"
+                  >
+                    <span class="chip-avatar chip-any">
+                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+                    </span>
+                    <span>Pas de préférence</span>
+                  </button>
+                  <button
+                    v-for="st in staffOptionsFor(entry)" :key="st.id"
+                    :class="['staff-chip', entry.staffId === st.id && 'active']"
+                    @click="setStaffForService(entry.id, st.id)"
+                  >
+                    <span class="chip-avatar">
+                      <img v-if="st.avatar_url" :src="st.avatar_url" :alt="st.name" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" />
+                      <span v-else>{{ st.name.charAt(0) }}</span>
+                    </span>
+                    <span>{{ st.name }}</span>
+                  </button>
+                </div>
               </div>
-              <span class="staff-name">Pas de préférence</span>
-              <div class="staff-check" v-if="selectedStaff === null">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
-              </div>
-            </button>
-            <button
-              v-for="s in filteredStaff" :key="s.id"
-              :class="['staff-item', selectedStaff?.id === s.id && 'selected']"
-              @click="selectedStaff = s"
-            >
-              <div class="staff-avatar">
-                <img v-if="s.avatar_url" :src="s.avatar_url" :alt="s.name" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" />
-                <span v-else>{{ s.name.charAt(0) }}</span>
-              </div>
-              <span class="staff-name">{{ s.name }}</span>
-              <div class="staff-check" v-if="selectedStaff?.id === s.id">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
-              </div>
-            </button>
+            </div>
           </div>
 
-          <button class="bk-btn-primary" :disabled="!selectedService" @click="goToDatetime" style="margin-top:24px;">
+          <button class="bk-btn-primary" :disabled="!selectedServices.length" @click="goToDatetime" style="margin-top:24px;">
             Choisir la date
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
           </button>
@@ -282,9 +372,8 @@ const filteredStaff = computed(() => {
           </button>
 
           <div class="bk-recap-bar">
-            <span class="recap-svc">{{ selectedService.name }}</span>
-            <span v-if="selectedStaff" class="recap-staff">· {{ selectedStaff.name }}</span>
-            <span v-else class="recap-staff">· Sans préférence</span>
+            <span class="recap-svc">{{ selectedServices.map(s => s.name).join(' + ') }}</span>
+            <span class="recap-total">{{ totalPrice }} MAD</span>
           </div>
 
           <div class="cal-wrap">
@@ -371,10 +460,17 @@ const filteredStaff = computed(() => {
             </div>
             <div class="confirm-row">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93l-1.41 1.41"/></svg>
-              <div>
-                <div class="confirm-label">Prestation</div>
-                <div class="confirm-val">{{ selectedService.name }}</div>
-                <div class="confirm-sub" v-if="selectedService.price">{{ selectedService.price }} MAD</div>
+              <div style="flex:1;">
+                <div class="confirm-label">Prestations</div>
+                <div v-for="entry in selectedServices" :key="entry.id" class="confirm-svc-line">
+                  <div class="confirm-val" style="font-size:13.5px;">{{ entry.name }}</div>
+                  <div class="confirm-sub">
+                    <span v-if="entry.price">{{ entry.price }} MAD</span>
+                    <span v-if="entry.staffId"> · {{ staffList.find(s => s.id === entry.staffId)?.name }}</span>
+                    <span v-else> · Sans préférence</span>
+                  </div>
+                </div>
+                <div class="confirm-total" v-if="selectedServices.length > 1">Total : {{ totalPrice }} MAD · {{ totalDuration }} min</div>
               </div>
             </div>
             <div class="confirm-row">
@@ -382,13 +478,6 @@ const filteredStaff = computed(() => {
               <div>
                 <div class="confirm-label">Date & heure</div>
                 <div class="confirm-val">{{ formatDate(selectedDate) }} à {{ selectedSlot }}</div>
-              </div>
-            </div>
-            <div v-if="selectedStaff" class="confirm-row">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-              <div>
-                <div class="confirm-label">Collaborateur</div>
-                <div class="confirm-val">{{ selectedStaff.name }}</div>
               </div>
             </div>
           </div>
@@ -414,7 +503,12 @@ const filteredStaff = computed(() => {
         <div class="success-details">
           <div class="confirm-row">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/></svg>
-            <span>{{ confirmResult?.service }}</span>
+            <div>
+              <div v-if="Array.isArray(confirmResult?.services)">
+                <div v-for="s in confirmResult.services" :key="s">{{ s }}</div>
+              </div>
+              <span v-else>{{ confirmResult?.service }}</span>
+            </div>
           </div>
           <div class="confirm-row">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
@@ -434,21 +528,22 @@ const filteredStaff = computed(() => {
 <style scoped>
 .bk-layout {
   min-height: 100vh;
-  background: linear-gradient(135deg, #f0f4ff 0%, #faf5ff 100%);
+  background: var(--bg-main);
   display: flex; align-items: flex-start; justify-content: center;
   padding: 24px 16px;
 }
 .bk-card {
-  background: #fff; border-radius: 20px;
-  box-shadow: 0 8px 40px rgba(0,0,0,.10);
+  background: var(--bg-card); border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-lg);
   padding: 32px 28px; width: 100%; max-width: 560px;
+  border: 1px solid var(--border);
 }
 .bk-card.wide { max-width: 600px; }
 
-.bk-loading { display: flex; align-items: center; gap: 12px; justify-content: center; color: #64748b; font-size: 14px; }
+.bk-loading { display: flex; align-items: center; gap: 12px; justify-content: center; color: var(--text-muted); font-size: 14px; }
 .bk-spinner {
   width: 20px; height: 20px;
-  border: 2px solid #e2e8f0; border-top-color: #6366f1;
+  border: 2px solid var(--border); border-top-color: var(--primary);
   border-radius: 50%; animation: spin .7s linear infinite;
 }
 @keyframes spin { to { transform: rotate(360deg); } }
@@ -456,18 +551,18 @@ const filteredStaff = computed(() => {
 /* Org header */
 .bk-org-header {
   display: flex; align-items: center; gap: 14px;
-  padding-bottom: 20px; border-bottom: 1px solid #f1f5f9; margin-bottom: 20px;
+  padding-bottom: 20px; border-bottom: 1px solid var(--border); margin-bottom: 20px;
 }
-.bk-org-logo-sm { width: 44px; height: 44px; border-radius: 12px; overflow: hidden; background: #f1f5f9; }
+.bk-org-logo-sm { width: 44px; height: 44px; border-radius: 12px; overflow: hidden; background: var(--bg-soft); }
 .bk-org-logo-sm img { width: 100%; height: 100%; object-fit: contain; }
 .bk-org-avatar-sm {
   width: 44px; height: 44px; border-radius: 12px;
-  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  background: linear-gradient(135deg, var(--primary), var(--primary-light));
   color: #fff; font-size: 20px; font-weight: 700;
   display: flex; align-items: center; justify-content: center;
 }
-.bk-org-name-lg { font-size: 16px; font-weight: 800; color: #1e293b; }
-.bk-client-tag { font-size: 12.5px; color: #64748b; margin-top: 2px; }
+.bk-org-name-lg { font-size: 16px; font-weight: 800; color: var(--text-main); }
+.bk-client-tag { font-size: 12.5px; color: var(--text-muted); margin-top: 2px; }
 
 /* Steps */
 .bk-steps {
@@ -476,23 +571,23 @@ const filteredStaff = computed(() => {
 }
 .bk-step {
   display: flex; align-items: center; gap: 6px;
-  font-size: 12px; font-weight: 600; color: #94a3b8;
+  font-size: 12px; font-weight: 600; color: var(--text-light);
 }
-.bk-step.active { color: #6366f1; }
-.bk-step.done { color: #10b981; }
+.bk-step.active { color: var(--primary); }
+.bk-step.done { color: var(--green); }
 .bk-step-num {
   width: 22px; height: 22px; border-radius: 50%;
-  background: #f1f5f9; color: #94a3b8;
+  background: var(--bg-soft); color: var(--text-light);
   font-size: 11px; font-weight: 700;
   display: flex; align-items: center; justify-content: center;
 }
-.bk-step.active .bk-step-num { background: #6366f1; color: #fff; }
-.bk-step.done .bk-step-num { background: #10b981; color: #fff; }
-.bk-step-line { flex: 1; height: 2px; background: #e2e8f0; border-radius: 1px; }
+.bk-step.active .bk-step-num { background: var(--primary); color: #fff; }
+.bk-step.done .bk-step-num { background: var(--green); color: #fff; }
+.bk-step-line { flex: 1; height: 2px; background: var(--border); border-radius: 1px; }
 
 .bk-section-title {
-  font-size: 13px; font-weight: 700; color: #475569;
-  text-transform: uppercase; letter-spacing: .05em;
+  font-size: 11px; font-weight: 700; color: var(--text-light);
+  text-transform: uppercase; letter-spacing: .07em;
   margin-bottom: 12px;
 }
 
@@ -500,67 +595,104 @@ const filteredStaff = computed(() => {
 .svc-list { display: flex; flex-direction: column; gap: 8px; }
 .svc-item {
   display: flex; align-items: center; gap: 12px;
-  padding: 13px 16px; border: 1.5px solid #e2e8f0;
-  border-radius: 12px; background: #fff; cursor: pointer;
+  padding: 13px 16px; border: 1px solid var(--border);
+  border-radius: var(--radius-lg); background: var(--bg-card); cursor: pointer;
   text-align: left; width: 100%; transition: border-color .15s, box-shadow .15s;
 }
-.svc-item:hover { border-color: #6366f1; }
-.svc-item.selected { border-color: #6366f1; background: #f5f3ff; box-shadow: 0 0 0 3px #6366f120; }
+.svc-item:hover { border-color: var(--primary); }
+.svc-item.selected { border-color: var(--primary); background: var(--primary-soft); box-shadow: 0 0 0 3px var(--input-focus-ring); }
 .svc-info { flex: 1; }
-.svc-name { font-size: 14px; font-weight: 700; color: #1e293b; }
-.svc-duration { font-size: 12px; color: #94a3b8; margin-top: 2px; }
-.svc-price { font-size: 14px; font-weight: 700; color: #6366f1; }
-.svc-check { width: 22px; height: 22px; background: #6366f1; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; flex-shrink: 0; }
-
-/* Staff */
-.staff-list { display: flex; flex-wrap: wrap; gap: 8px; }
-.staff-item {
-  display: flex; align-items: center; gap: 9px;
-  padding: 9px 14px; border: 1.5px solid #e2e8f0;
-  border-radius: 10px; background: #fff; cursor: pointer;
-  transition: border-color .15s; position: relative;
+.svc-name { font-size: 14px; font-weight: 700; color: var(--text-main); }
+.svc-duration { font-size: 12px; color: var(--text-light); margin-top: 2px; }
+.svc-price { font-size: 14px; font-weight: 700; color: var(--primary); }
+.svc-check {
+  width: 22px; height: 22px; background: var(--primary); border-radius: 50%;
+  display: flex; align-items: center; justify-content: center; color: #fff; flex-shrink: 0;
 }
-.staff-item:hover { border-color: #6366f1; }
-.staff-item.selected { border-color: #6366f1; background: #f5f3ff; }
-.staff-avatar {
-  width: 32px; height: 32px; border-radius: 50%;
-  background: linear-gradient(135deg, #6366f1, #8b5cf6);
-  color: #fff; font-size: 13px; font-weight: 700;
-  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+.svc-add-icon {
+  width: 22px; height: 22px; border: 1.5px solid var(--border-strong); border-radius: 50%;
+  display: flex; align-items: center; justify-content: center; color: var(--text-light); flex-shrink: 0;
+}
+.svc-item:hover .svc-add-icon { border-color: var(--primary); color: var(--primary); }
+
+/* Basket */
+.basket {
+  margin-top: 16px; border: 1px solid rgba(21,128,61,.25);
+  border-radius: var(--radius-lg); overflow: hidden; background: var(--green-soft);
+}
+.basket-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 14px; border-bottom: 1px solid rgba(21,128,61,.2);
+}
+.basket-title { font-size: 12px; font-weight: 700; color: var(--green); text-transform: uppercase; letter-spacing: .04em; }
+.basket-total { font-size: 12.5px; font-weight: 700; color: var(--primary); }
+.basket-items { display: flex; flex-direction: column; }
+.basket-item-block { border-bottom: 1px solid rgba(21,128,61,.15); padding: 10px 14px; }
+.basket-item-block:last-child { border-bottom: none; }
+.basket-item {
+  display: flex; align-items: center; gap: 10px;
+  margin-bottom: 8px;
+}
+.basket-item-name { flex: 1; font-size: 13.5px; font-weight: 600; color: var(--text-main); }
+.basket-item-price { font-size: 13px; font-weight: 700; color: var(--primary); }
+.basket-remove {
+  background: transparent; border: none; cursor: pointer;
+  color: var(--text-light); padding: 3px; display: flex; align-items: center;
+  border-radius: 4px; transition: color .12s;
+}
+.basket-remove:hover { color: var(--red); }
+
+/* Staff chips per service */
+.staff-chips {
+  display: flex; flex-wrap: wrap; gap: 6px;
+}
+.staff-chip {
+  display: flex; align-items: center; gap: 6px;
+  padding: 4px 10px 4px 4px;
+  border: 1px solid var(--border); border-radius: 20px;
+  background: var(--bg-card); cursor: pointer; font-size: 12px; font-weight: 600; color: var(--text-muted);
+  transition: border-color .12s, background .12s;
+}
+.staff-chip:hover { border-color: var(--primary); color: var(--primary); }
+.staff-chip.active { border-color: var(--primary); background: var(--primary-soft); color: var(--primary); }
+.chip-avatar {
+  width: 22px; height: 22px; border-radius: 50%; flex-shrink: 0;
+  background: linear-gradient(135deg, var(--primary), var(--primary-light));
+  color: #fff; font-size: 10px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
   overflow: hidden;
 }
-.staff-name { font-size: 13px; font-weight: 600; color: #1e293b; }
-.staff-check {
-  width: 18px; height: 18px; background: #6366f1; border-radius: 50%;
-  display: flex; align-items: center; justify-content: center; color: #fff;
-}
+.chip-any { background: var(--bg-soft); color: var(--text-muted); }
+
 
 /* Calendar */
 .bk-back-btn {
   display: inline-flex; align-items: center; gap: 5px;
-  font-size: 12.5px; font-weight: 600; color: #6366f1;
+  font-size: 12.5px; font-weight: 600; color: var(--primary);
   background: none; border: none; cursor: pointer; padding: 0; margin-bottom: 16px;
 }
 .bk-recap-bar {
-  background: #f8fafc; border: 1px solid #e2e8f0;
+  background: var(--bg-soft); border: 1px solid var(--border);
   border-radius: 10px; padding: 10px 14px;
-  font-size: 13px; font-weight: 600; color: #475569;
-  margin-bottom: 20px;
+  font-size: 13px; font-weight: 600; color: var(--text-muted);
+  margin-bottom: 20px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
 }
-.recap-staff { color: #94a3b8; font-weight: 400; }
+.recap-svc { flex: 1; }
+.recap-staff { color: var(--text-light); font-weight: 400; }
+.recap-total { color: var(--primary); font-weight: 700; margin-left: auto; }
 
-.cal-wrap { border: 1px solid #e2e8f0; border-radius: 14px; overflow: hidden; }
+.cal-wrap { border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
 .cal-nav {
   display: flex; align-items: center; justify-content: space-between;
-  padding: 14px 16px; border-bottom: 1px solid #f1f5f9;
+  padding: 14px 16px; border-bottom: 1px solid var(--border);
 }
 .cal-nav-btn {
-  width: 32px; height: 32px; border: 1px solid #e2e8f0;
-  border-radius: 8px; background: #fff; cursor: pointer;
+  width: 32px; height: 32px; border: 1px solid var(--border);
+  border-radius: 8px; background: var(--bg-card); cursor: pointer;
   display: flex; align-items: center; justify-content: center;
 }
-.cal-nav-btn:hover { background: #f8fafc; }
-.cal-month-label { font-size: 14px; font-weight: 700; color: #1e293b; text-transform: capitalize; }
+.cal-nav-btn:hover { background: var(--bg-soft); }
+.cal-month-label { font-size: 14px; font-weight: 700; color: var(--text-main); text-transform: capitalize; }
 
 .cal-grid {
   display: grid; grid-template-columns: repeat(7, 1fr);
@@ -568,78 +700,105 @@ const filteredStaff = computed(() => {
 }
 .cal-day-label {
   text-align: center; font-size: 11px; font-weight: 700;
-  color: #94a3b8; padding: 4px 0; text-transform: uppercase;
+  color: var(--text-light); padding: 4px 0; text-transform: uppercase;
 }
 .cal-day {
   aspect-ratio: 1; border: none; background: transparent;
-  border-radius: 8px; font-size: 13px; color: #94a3b8;
+  border-radius: 8px; font-size: 13px; color: var(--text-light);
   cursor: default; display: flex; align-items: center; justify-content: center;
   font-weight: 500;
 }
 .cal-day.empty { background: transparent; }
-.cal-day.past { color: #e2e8f0; }
-.cal-day.today { color: #6366f1; font-weight: 700; }
+.cal-day.past { color: var(--border-strong); }
+.cal-day.today { color: var(--primary); font-weight: 700; }
 .cal-day.available {
-  color: #1e293b; cursor: pointer; font-weight: 600;
-  background: #f0f4ff;
+  color: var(--text-main); cursor: pointer; font-weight: 600;
+  background: var(--primary-soft);
 }
-.cal-day.available:hover { background: #e0e7ff; }
-.cal-day.selected-day { background: #6366f1 !important; color: #fff !important; }
+.cal-day.available:hover { background: var(--primary-mid); }
+.cal-day.selected-day { background: var(--primary) !important; color: #fff !important; }
 
 /* Slots */
 .slots-section { margin-top: 20px; }
 .slots-grid { display: flex; flex-wrap: wrap; gap: 8px; }
 .slot-btn {
-  padding: 9px 18px; border: 1.5px solid #e2e8f0;
-  border-radius: 10px; background: #fff; font-size: 13.5px;
-  font-weight: 700; color: #1e293b; cursor: pointer;
+  padding: 9px 18px; border: 1px solid var(--border);
+  border-radius: 10px; background: var(--bg-card); font-size: 13.5px;
+  font-weight: 700; color: var(--text-main); cursor: pointer;
   transition: border-color .12s;
 }
-.slot-btn:hover { border-color: #6366f1; color: #6366f1; }
-.slot-btn.selected-slot { background: #6366f1; color: #fff; border-color: #6366f1; }
+.slot-btn:hover { border-color: var(--primary); color: var(--primary); }
+.slot-btn.selected-slot { background: var(--primary); color: #fff; border-color: var(--primary); }
 
 /* Confirm card */
 .confirm-card {
-  border: 1.5px solid #e2e8f0; border-radius: 14px;
+  border: 1px solid var(--border); border-radius: var(--radius-lg);
   padding: 4px 0; overflow: hidden;
 }
 .confirm-row {
   display: flex; align-items: flex-start; gap: 14px;
-  padding: 14px 18px; border-bottom: 1px solid #f1f5f9;
-  font-size: 13.5px; color: #64748b;
+  padding: 14px 18px; border-bottom: 1px solid var(--border);
+  font-size: 13.5px; color: var(--text-muted);
 }
 .confirm-row:last-child { border-bottom: none; }
 .confirm-row svg { flex-shrink: 0; margin-top: 2px; }
-.confirm-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: #94a3b8; margin-bottom: 3px; }
-.confirm-val { font-size: 14px; font-weight: 700; color: #1e293b; }
-.confirm-sub { font-size: 12px; color: #94a3b8; margin-top: 1px; }
+.confirm-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--text-light); margin-bottom: 3px; }
+.confirm-val { font-size: 14px; font-weight: 700; color: var(--text-main); }
+.confirm-sub { font-size: 12px; color: var(--text-light); margin-top: 1px; }
+.confirm-svc-line { margin-bottom: 4px; }
+.confirm-total { margin-top: 6px; font-size: 12px; font-weight: 700; color: var(--primary); }
 
 /* Success */
 .bk-success { text-align: center; padding: 20px 0; }
 .success-icon {
   width: 72px; height: 72px; border-radius: 50%;
-  background: linear-gradient(135deg, #10b981, #059669);
-  color: #fff; display: flex; align-items: center; justify-content: center;
+  background: var(--green-soft); border: 2px solid rgba(21,128,61,.25);
+  color: var(--green); display: flex; align-items: center; justify-content: center;
   margin: 0 auto 20px;
 }
-.success-title { font-size: 22px; font-weight: 800; color: #1e293b; margin: 0 0 8px; }
-.success-sub { font-size: 14px; color: #64748b; margin: 0 0 24px; }
-.success-details { text-align: left; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; margin-bottom: 4px; }
-.success-details .confirm-row { font-size: 14px; color: #1e293b; font-weight: 600; }
+.success-title { font-size: 22px; font-weight: 800; color: var(--text-main); margin: 0 0 8px; }
+.success-sub { font-size: 14px; color: var(--text-muted); margin: 0 0 24px; }
+.success-details { text-align: left; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; margin-bottom: 4px; }
+.success-details .confirm-row { font-size: 14px; color: var(--text-main); font-weight: 600; }
 
 /* Shared */
 .bk-btn-primary {
   display: flex; align-items: center; justify-content: center; gap: 8px;
-  background: linear-gradient(135deg, #6366f1, #8b5cf6);
-  color: #fff; border: none; border-radius: 12px;
+  background: var(--primary);
+  color: #fff; border: none; border-radius: var(--radius-lg);
   padding: 13px 20px; font-size: 14.5px; font-weight: 700;
-  cursor: pointer; transition: opacity .15s; width: 100%;
+  cursor: pointer; transition: background .15s, transform .1s, box-shadow .15s;
+  width: 100%; box-shadow: 0 0 18px var(--primary-glow);
 }
-.bk-btn-primary:hover { opacity: .9; }
-.bk-btn-primary:disabled { opacity: .5; cursor: not-allowed; }
+.bk-btn-primary:hover { background: var(--primary-light); transform: translateY(-1px); }
+.bk-btn-primary:disabled { opacity: .5; cursor: not-allowed; transform: none; }
 
 .bk-error {
-  background: #fef2f2; border: 1px solid #fca5a5;
-  color: #dc2626; font-size: 13px; padding: 10px 13px; border-radius: 8px;
+  background: var(--red-soft); border: 1px solid rgba(220,38,38,.25);
+  color: var(--red); font-size: 13px; padding: 10px 13px; border-radius: 8px;
 }
+
+/* Catégories */
+.cat-list { display: flex; flex-direction: column; gap: 8px; }
+.cat-group { border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+.cat-header {
+  display: flex; align-items: center; gap: 10px;
+  width: 100%; padding: 13px 16px;
+  background: var(--bg-card); border: none; cursor: pointer;
+  text-align: left; transition: background .15s;
+  border-left: 4px solid var(--cat-color, #94a3b8);
+}
+.cat-header:hover { background: var(--bg-soft); }
+.cat-header.cat-open { background: var(--bg-soft); }
+.cat-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.cat-name { flex: 1; font-size: 14px; font-weight: 700; color: var(--text-main); }
+.cat-count { font-size: 11.5px; color: var(--text-light); font-weight: 500; }
+.cat-chevron { flex-shrink: 0; color: #94a3b8; transition: transform .2s; }
+.cat-chevron.open { transform: rotate(180deg); }
+.cat-body {
+  padding: 8px 12px 12px;
+  border-top: 1px solid #f1f5f9;
+  background: #fafafa;
+}
+.cat-body .svc-item { background: #fff; }
 </style>

@@ -5,6 +5,29 @@ const router = Router()
 
 // ── helpers ─────────────────────────────────────────────────────────────────
 
+/**
+ * Normalise et formate un numéro marocain → "06 60 44 36 60"
+ * Gère : +212XXXXXXXXX, 00212XXXXXXXXX, 06XXXXXXXX, 6XXXXXXXX (9 chiffres)
+ */
+function formatPhone(raw) {
+  let d = String(raw).replace(/\D/g, '')
+
+  // Préfixe international +212 / 00212
+  if (d.startsWith('00212')) d = '0' + d.slice(5)
+  else if (d.startsWith('212') && d.length >= 11) d = '0' + d.slice(3)
+
+  // 9 chiffres sans le 0 initial (ex: 660443660)
+  if (d.length === 9 && !d.startsWith('0')) d = '0' + d
+
+  // Tronquer à 10
+  d = d.slice(0, 10)
+
+  // Formater XX XX XX XX XX
+  return d.length === 10
+    ? d.replace(/(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})/, '$1 $2 $3 $4 $5')
+    : d
+}
+
 function buildHourlySlots(open, close) {
   const slots = []
   let [h, m] = open.split(':').map(Number)
@@ -90,7 +113,23 @@ router.get('/:orgId/services', async (req, res) => {
     .eq('is_active', true)
     .order('name')
   if (error) return res.status(500).json({ error: error.message })
-  res.json(data || [])
+
+  // Fetch category names separately (FK not declared in Supabase)
+  const catIds = [...new Set((data || []).map(s => s.category_id).filter(Boolean))]
+  let catMap = {}
+  if (catIds.length) {
+    const { data: cats } = await supabase
+      .from('service_categories')
+      .select('id, name, color')
+      .in('id', catIds)
+    if (cats) catMap = Object.fromEntries(cats.map(c => [c.id, c]))
+  }
+
+  const result = (data || []).map(s => ({
+    ...s,
+    category: catMap[s.category_id] || null
+  }))
+  res.json(result)
 })
 
 // GET /booking/:orgId/staff
@@ -113,7 +152,8 @@ router.get('/:orgId/available-days', async (req, res) => {
   const [y, m] = month.split('-').map(Number)
   const lastDay = new Date(y, m, 0).getDate()
 
-  const openingHours = await getOrgSettings(orgId)
+  const DEFAULT_HOURS = { mon:{active:true,open:'09:00',close:'18:00'}, tue:{active:true,open:'09:00',close:'18:00'}, wed:{active:true,open:'09:00',close:'18:00'}, thu:{active:true,open:'09:00',close:'18:00'}, fri:{active:true,open:'09:00',close:'18:00'}, sat:{active:true,open:'09:00',close:'18:00'}, sun:{active:false,open:'09:00',close:'18:00'} }
+  const openingHours = (await getOrgSettings(orgId)) || DEFAULT_HOURS
   const closures = await getClosures(orgId)
   const DAY_NAMES = ['sun','mon','tue','wed','thu','fri','sat']
 
@@ -144,7 +184,8 @@ router.get('/:orgId/slots', async (req, res) => {
   if (closure) return res.json({ slots: [], closed: true, closure })
 
   // Opening hours
-  const openingHours = await getOrgSettings(orgId)
+  const DEFAULT_HOURS = { mon:{active:true,open:'09:00',close:'18:00'}, tue:{active:true,open:'09:00',close:'18:00'}, wed:{active:true,open:'09:00',close:'18:00'}, thu:{active:true,open:'09:00',close:'18:00'}, fri:{active:true,open:'09:00',close:'18:00'}, sat:{active:true,open:'09:00',close:'18:00'}, sun:{active:false,open:'09:00',close:'18:00'} }
+  const openingHours = (await getOrgSettings(orgId)) || DEFAULT_HOURS
   const DAY_NAMES = ['sun','mon','tue','wed','thu','fri','sat']
   const dayName = DAY_NAMES[new Date(date + 'T12:00:00').getDay()]
   const daySettings = openingHours?.[dayName]
@@ -217,8 +258,8 @@ router.get('/:orgId/slots', async (req, res) => {
     // Skip past slots for today
     if (date === todayStr && parseInt(slot) <= currentHour) return false
 
-    if (!competentStaffIds) {
-      // No competence model: simple 1-appt-per-slot
+    // No competence model OR aucun staff compétent trouvé : logique simple
+    if (!competentStaffIds || competentStaffIds.length === 0) {
       const busyCount = (appts || []).filter(a => a.start_time.slice(11, 16) === slot).length
       return busyCount === 0
     }
@@ -230,19 +271,18 @@ router.get('/:orgId/slots', async (req, res) => {
   res.json({ slots: freeSlots, closed: false })
 })
 
-// POST /booking/:orgId/appointments — créer un RDV public
+// POST /booking/:orgId/appointments — créer un RDV public (multi-prestations)
 router.post('/:orgId/appointments', async (req, res) => {
   const { orgId } = req.params
-  const { name, last_name, phone, date, time, serviceId, staffId } = req.body
+  const { name, last_name, phone, date, time, services } = req.body
 
-  if (!name || !phone || !date || !time || !serviceId) {
+  if (!name || !phone || !date || !time || !services?.length) {
     return res.status(400).json({ error: 'Champs requis manquants' })
   }
 
-  // Normalise phone
-  const normalizedPhone = '+' + phone.replace(/\D/g, '').replace(/^0+/, '')
+  const normalizedPhone = formatPhone(phone)
 
-  // Upsert client (find by phone in this org)
+  // Upsert client
   let clientId
   const { data: existing } = await supabase
     .from('clients')
@@ -263,13 +303,16 @@ router.post('/:orgId/appointments', async (req, res) => {
     clientId = newClient.id
   }
 
-  // Get service info
-  const { data: svc } = await supabase
+  // Fetch all service infos
+  const serviceIds = services.map(s => s.serviceId)
+  const { data: svcRows, error: svcErr } = await supabase
     .from('services')
-    .select('name, price, duration_minutes')
-    .eq('id', serviceId)
-    .maybeSingle()
-  if (!svc) return res.status(404).json({ error: 'Service introuvable' })
+    .select('id, name, price, duration_minutes')
+    .in('id', serviceIds)
+  if (svcErr) return res.status(500).json({ error: svcErr.message })
+  if (!svcRows?.length) return res.status(404).json({ error: 'Service(s) introuvable(s)' })
+
+  const svcMap = Object.fromEntries(svcRows.map(s => [s.id, s]))
 
   // Create appointment
   const startTime = `${date}T${time}:00`
@@ -279,28 +322,28 @@ router.post('/:orgId/appointments', async (req, res) => {
       organization_id: orgId,
       client_id: clientId,
       start_time: startTime,
-      status: 'confirmed',
-      source: 'online'
+      status: 'scheduled',
+      source: 'online',
+      type: 'appointment'
     })
     .select('id')
     .single()
   if (aErr) return res.status(500).json({ error: aErr.message })
 
-  // Create appointment_service
-  const { error: asErr } = await supabase
-    .from('appointment_services')
-    .insert({
-      appointment_id: appt.id,
-      service_id: serviceId,
-      staff_id: staffId || null,
-      price_at_booking: svc.price
-    })
+  // Create appointment_services (one row per service)
+  const apptServices = services.map(s => ({
+    appointment_id: appt.id,
+    service_id: s.serviceId,
+    staff_id: s.staffId || null,
+    price_at_booking: svcMap[s.serviceId]?.price || null
+  }))
+  const { error: asErr } = await supabase.from('appointment_services').insert(apptServices)
   if (asErr) return res.status(500).json({ error: asErr.message })
 
   res.json({
     ok: true,
     appointment_id: appt.id,
-    service: svc.name,
+    services: svcRows.map(s => s.name),
     date,
     time,
     client: name

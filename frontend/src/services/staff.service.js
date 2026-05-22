@@ -2,6 +2,7 @@ import { supabase } from '@/lib/supabase'
 import { getOrgId } from '@/composables/useOrgId'
 
 export async function fetchStaff() {
+  const orgId = await getOrgId()
   const { data, error } = await supabase
     .from('staff')
     .select(`
@@ -11,6 +12,7 @@ export async function fetchStaff() {
       ),
       staff_absences ( id, start_date, end_date )
     `)
+    .eq('organization_id', orgId)
     .order('name')
 
   if (error) throw error

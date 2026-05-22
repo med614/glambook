@@ -1,53 +1,46 @@
 <template>
-  <div class="modal-overlay" @click.self="$emit('close')">
-    <div class="modal-container premium-modal">
-      <header class="modal-header">
-        <div class="header-content">
-          <AppIcon :name="client ? 'edit' : 'plus'" :size="24" strokeWidth="2.5" />
-          <div>
-            <h2>{{ client ? 'Modifier le Client' : 'Ajouter un Client' }}</h2>
-            <p>{{ client ? 'Mettez à jour les informations du profil.' : 'Enregistrez un nouveau client dans votre base.' }}</p>
-          </div>
-        </div>
-        <button class="btn-close" @click="$emit('close')">&times;</button>
-      </header>
+  <BaseModal @close="$emit('close')">
+    <div class="modal-header">
+      <div class="cl-hd-icon">
+        <AppIcon :name="client ? 'edit' : 'plus'" :size="18" strokeWidth="2.5" />
+      </div>
+      <div class="cl-hd-content">
+        <span class="modal-title">{{ client ? 'Modifier le Client' : 'Ajouter un Client' }}</span>
+        <p class="cl-hd-sub">{{ client ? 'Mettez à jour les informations du profil.' : 'Enregistrez un nouveau client dans votre base.' }}</p>
+      </div>
+      <button class="modal-close" @click="$emit('close')">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
 
-      <form @submit.prevent="handleSubmit" class="modal-form">
+    <form @submit.prevent="handleSubmit">
+      <div class="modal-body">
         <div class="field-row">
           <div class="form-group flex-1">
             <label>Prénom</label>
-            <input 
-              v-model="form.name" 
-              type="text" 
-              placeholder="Ex: Nabil" 
-              required 
-            />
+            <input v-model="form.name" type="text" placeholder="Ex: Nabil" required />
           </div>
           <div class="form-group flex-1">
             <label>Nom</label>
-            <input 
-              v-model="form.last_name" 
-              type="text" 
-              placeholder="Ex: BERRADA" 
-            />
+            <input v-model="form.last_name" type="text" placeholder="Ex: BERRADA" />
           </div>
         </div>
 
         <div class="form-group">
           <label>Téléphone</label>
-          <div class="input-with-icon">
-             <input
-               :value="form.phone"
-               @input="onPhoneInput"
-               type="tel"
-               placeholder="06 12 34 56 78"
-               required
-               :class="{ 'input-error': form.phone && !isValidPhone(form.phone) }"
-             />
-             <span v-if="form.phone && !isValidPhone(form.phone)" style="font-size:11.5px;color:#dc2626;margin-top:4px;display:block;">
-               Format invalide — ex: 06 12 34 56 78 ou 07 XX XX XX XX
-             </span>
-          </div>
+          <input
+            :value="form.phone"
+            @input="onPhoneInput"
+            type="tel"
+            placeholder="06 12 34 56 78"
+            required
+            :class="{ 'input-error': form.phone && !isValidPhone(form.phone) }"
+          />
+          <span v-if="form.phone && !isValidPhone(form.phone)" class="form-error">
+            Format invalide — ex: 06 12 34 56 78 ou 07 XX XX XX XX
+          </span>
         </div>
 
         <div v-if="duplicateClient" class="duplicate-banner">
@@ -57,27 +50,25 @@
             Un client existe déjà avec ce numéro :
             <strong>{{ duplicateClient.name }} {{ duplicateClient.last_name || '' }}</strong>.
           </div>
-          <button type="button" class="btn-secondary" style="font-size:12px;padding:6px 12px;" @click="ignoreDuplicate">Ignorer</button>
+          <button type="button" class="btn btn-outline btn-sm" @click="ignoreDuplicate">Ignorer</button>
         </div>
 
-        <div v-if="error" class="error-banner">
-          {{ error }}
-        </div>
+        <div v-if="error" class="error-banner">{{ error }}</div>
+      </div>
 
-        <div class="modal-footer">
-          <button type="button" class="btn-secondary" @click="$emit('close')">Annuler</button>
-          <button type="submit" class="btn-primary" :disabled="loading">
-            <span v-if="loading">Enregistrement...</span>
-            <span v-else>{{ client ? 'Enregistrer les modifications' : 'Créer le client' }}</span>
-          </button>
-        </div>
-      </form>
-    </div>
-  </div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-outline" @click="$emit('close')">Annuler</button>
+        <button type="submit" class="btn btn-primary" :disabled="loading">
+          {{ loading ? 'Enregistrement...' : (client ? 'Enregistrer les modifications' : 'Créer le client') }}
+        </button>
+      </div>
+    </form>
+  </BaseModal>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue'
+import BaseModal from '../modal/BaseModal.vue'
 import AppIcon from '../common/AppIcon.vue'
 import { updateClient, getOrCreateClient, findClientByPhone } from '../../services/clients.service'
 import { formatPhone, isValidPhone } from '@/utils/phone'
@@ -157,179 +148,32 @@ function ignoreDuplicate() {
 </script>
 
 <style scoped>
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(15, 23, 42, 0.4);
-  backdrop-filter: blur(8px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 10000;
-  padding: 20px;
+/* Header icône + sous-titre */
+.cl-hd-icon {
+  width: 34px; height: 34px; border-radius: 9px; flex-shrink: 0;
+  background: var(--primary-soft); color: var(--primary);
+  display: flex; align-items: center; justify-content: center;
 }
+.cl-hd-content { flex: 1; min-width: 0; }
+.cl-hd-sub { font-size: 12px; color: var(--text-muted); margin: 2px 0 0; }
 
-.premium-modal {
-  background: #fff;
-  width: 100%;
-  max-width: 500px;
-  border-radius: 24px;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
-  overflow: hidden;
-  animation: slidePop 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-}
+/* Disposition du formulaire */
+.field-row { display: flex; gap: 14px; }
+.flex-1 { flex: 1; min-width: 0; }
 
-@keyframes slidePop {
-  from { opacity: 0; transform: scale(0.95) translateY(10px); }
-  to { opacity: 1; transform: scale(1) translateY(0); }
-}
+/* Override espacement form-group (modal.css met margin-bottom:0) */
+.form-group { margin-bottom: 18px; }
 
-.modal-header {
-  padding: 32px;
-  border-bottom: 1px solid var(--border-soft);
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-}
-
-.header-content {
-  display: flex;
-  gap: 16px;
-  align-items: center;
-  color: var(--accent-teal);
-}
-
-.header-content h2 {
-  font-size: 20px;
-  font-weight: 800;
-  color: #1e293b;
-  margin: 0;
-}
-
-.header-content p {
-  font-size: 13px;
-  color: #64748b;
-  margin: 4px 0 0;
-}
-
-.btn-close {
-  background: #f1f5f9;
-  border: none;
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  color: #64748b;
-  font-size: 20px;
-}
-
-.modal-form {
-  padding: 32px;
-}
-
-.field-row {
-  display: flex;
-  gap: 16px;
-  margin-bottom: 24px;
-}
-
-.form-group {
-  margin-bottom: 24px;
-}
-
-.form-group label {
-  display: block;
-  font-size: 11px;
-  font-weight: 800;
-  color: #94a3b8;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  margin-bottom: 10px;
-  padding-left: 2px;
-}
-
-.form-group input {
-  width: 100%;
-  padding: 12px 16px;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  font-size: 14px;
-  color: #1e293b;
-  transition: all 0.2s ease;
-}
-
-.form-group input:focus {
-  outline: none;
-  background: #fff;
-  border-color: #D9A758;
-  box-shadow: 0 0 0 4px rgba(217, 167, 88, 0.1);
-}
-.form-group input.input-error { border-color: #dc2626; }
-
-.flex-1 { flex: 1; }
-
+/* Bandeaux */
 .error-banner {
-  background: #fef2f2;
-  color: #ef4444;
-  padding: 12px;
-  border-radius: 12px;
-  font-size: 13px;
-  font-weight: 600;
-  margin-bottom: 24px;
-  border: 1px solid #fee2e2;
+  background: var(--red-soft); color: var(--red);
+  padding: 11px 14px; border-radius: 10px;
+  font-size: 13px; font-weight: 600; border: 1px solid var(--red);
 }
 .duplicate-banner {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  background: #fffbeb;
-  color: #92400e;
-  padding: 12px 14px;
-  border-radius: 12px;
-  font-size: 13px;
-  margin-bottom: 16px;
-  border: 1px solid #fcd34d;
-}
-
-.modal-footer {
-  display: flex;
-  gap: 12px;
-  justify-content: flex-end;
-  margin-top: 8px;
-}
-
-.btn-primary {
-  background: #1e293b;
-  color: #fff;
-  border: none;
-  padding: 12px 24px;
-  border-radius: 12px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.btn-primary:hover:not(:disabled) {
-  background: #0f172a;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-}
-
-.btn-secondary {
-  background: #f1f5f9;
-  color: #64748b;
-  border: none;
-  padding: 12px 24px;
-  border-radius: 12px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all 0.2s;
+  display: flex; align-items: flex-start; gap: 10px;
+  background: var(--orange-soft); color: var(--orange);
+  padding: 12px 14px; border-radius: 10px;
+  font-size: 13px; border: 1px solid var(--orange);
 }
 </style>

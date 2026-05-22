@@ -350,9 +350,9 @@ function initials(name) {
 
       <!-- Dates custom -->
       <div v-if="period === 'custom'" class="custom-range">
-        <input type="date" v-model="customStart" class="form-input-sm" />
+        <input type="date" v-model="customStart" style="width:auto;min-width:160px;" />
         <span style="color:var(--text-muted);font-size:13px;">→</span>
-        <input type="date" v-model="customEnd" class="form-input-sm" />
+        <input type="date" v-model="customEnd" style="width:auto;min-width:160px;" />
       </div>
 
       <!-- Vue par -->
@@ -372,13 +372,13 @@ function initials(name) {
       </div>
 
       <!-- Filtre staff -->
-      <select v-model="selectedStaffId" class="form-input-sm">
+      <select v-model="selectedStaffId" style="width:auto;min-width:160px;">
         <option :value="null">Tous les collaborateurs</option>
         <option v-for="s in staffList" :key="s.id" :value="s.id">{{ s.name }}</option>
       </select>
 
       <!-- Filtre service -->
-      <select v-model="selectedServiceId" class="form-input-sm">
+      <select v-model="selectedServiceId" style="width:auto;min-width:160px;">
         <option :value="null">Toutes les prestations</option>
         <option v-for="s in serviceList" :key="s.id" :value="s.id">{{ s.name }}</option>
       </select>
@@ -634,7 +634,7 @@ function initials(name) {
 }
 
 .kpi-card {
-  background: #fff;
+  background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: 12px;
   padding: 18px 20px;
@@ -642,16 +642,16 @@ function initials(name) {
 }
 
 .kpi-card--revenue {
-  background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
-  border-color: #6ee7b7;
+  background: var(--green-soft);
+  border-color: rgba(21,128,61,.25);
 }
-.kpi-card--revenue .kpi-value { color: #059669; }
+.kpi-card--revenue .kpi-value { color: var(--green); }
 
 .kpi-card--basket {
-  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
-  border-color: #93c5fd;
+  background: var(--blue-soft);
+  border-color: rgba(29,78,216,.25);
 }
-.kpi-card--basket .kpi-value { color: #2563eb; }
+.kpi-card--basket .kpi-value { color: var(--blue); }
 
 .kpi-value {
   font-size: 32px;
@@ -718,8 +718,8 @@ function initials(name) {
   width: 42px;
   height: 42px;
   border-radius: 10px;
-  background: #ede9fe;
-  color: #7c3aed;
+  background: var(--primary-soft);
+  color: var(--primary);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -770,8 +770,8 @@ function initials(name) {
   transition: width .4s ease;
 }
 
-.svc-fill { background: #7c3aed; }
-.client-fill { background: #0891b2; }
+.svc-fill { background: var(--primary); }
+.client-fill { background: var(--blue); }
 
 .status-badge {
   display: inline-flex;
@@ -781,16 +781,16 @@ function initials(name) {
   font-size: 10.5px;
   font-weight: 700;
 }
-.status-badge.cancelled { background: #fef3c7; color: #92400e; }
-.status-badge.noshow    { background: #fee2e2; color: #991b1b; }
-.status-badge.flagged   { background: #fef3c7; color: #b45309; border: 1px solid #fcd34d; }
+.status-badge.cancelled { background: var(--status-cancelled-bg); color: var(--status-cancelled-text); border: 1px solid var(--status-cancelled-border); }
+.status-badge.noshow    { background: var(--status-noshow-bg);    color: var(--status-noshow-text);    border: 1px solid var(--status-noshow-border); }
+.status-badge.flagged   { background: var(--orange-soft); color: var(--orange); border: 1px solid rgba(217,119,6,.25); }
 
 .client-avatar {
   width: 42px;
   height: 42px;
   border-radius: 50%;
-  background: #e0f2fe;
-  color: #0369a1;
+  background: var(--blue-soft);
+  color: var(--blue);
   font-size: 14px;
   font-weight: 700;
   display: flex;
@@ -804,8 +804,8 @@ function initials(name) {
   display: flex;
   align-items: center;
   gap: 8px;
-  background: #f8fafc;
-  color: #475569;
+  background: var(--bg-soft);
+  color: var(--text-muted);
 }
 .section-head-clients {
   display: flex;
@@ -817,8 +817,8 @@ function initials(name) {
   margin-left: auto;
   font-size: 11.5px;
   font-weight: 700;
-  background: #e2e8f0;
-  color: #64748b;
+  background: var(--bg-soft);
+  color: var(--text-muted);
   padding: 2px 10px;
   border-radius: 999px;
 }
@@ -835,7 +835,7 @@ function initials(name) {
 .walkin-kpi-value {
   font-size: 28px;
   font-weight: 800;
-  color: #475569;
+  color: var(--text-muted);
   line-height: 1;
 }
 .walkin-kpi-label {
@@ -850,7 +850,7 @@ function initials(name) {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
-  border-left: 2px solid #e2e8f0;
+  border-left: 2px solid var(--border);
   padding-left: 24px;
   flex: 1;
 }

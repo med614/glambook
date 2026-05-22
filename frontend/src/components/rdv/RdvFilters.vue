@@ -120,33 +120,33 @@
 
 <style scoped>
 .filter-bar {
-  background: #fff;
-  border: 1px solid var(--border-soft);
+  background: var(--bg-card);
+  border: 1px solid var(--border-strong);
   border-radius: 12px;
-  padding: 8px;
+  padding: 10px;
   display: flex;
   align-items: center;
-  gap: 16px;
-  margin-bottom: 24px;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+  gap: 8px;
+  margin-bottom: 0;
+  box-shadow: 0 1px 2px rgba(40,31,10,0.04);
 }
 
 .date-filter-wrapper {
   display: flex;
   align-items: center;
-  background: #fff;
-  border: 1px solid var(--border-soft);
-  border-radius: 8px;
+  background: var(--bg-main);
+  border: 1px solid var(--border-strong);
+  border-radius: 9px;
   padding: 0 12px;
-  height: 42px;
+  height: 40px;
   transition: border 0.2s;
   flex: 1;
-  max-width: 200px;
+  max-width: 190px;
 }
 
 .date-filter-wrapper:focus-within {
-  border-color: var(--accent-teal);
-  box-shadow: 0 0 0 2px rgba(74, 144, 164, 0.1);
+  border-color: var(--primary);
+  box-shadow: var(--input-focus-ring);
 }
 
 .date-filter-wrapper input {
@@ -185,7 +185,7 @@
 
 .category-select-wrapper {
   flex: 1;
-  max-width: 220px;
+  max-width: 210px;
 }
 
 .spacer { flex: 1; }

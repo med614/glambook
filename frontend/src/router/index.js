@@ -90,9 +90,7 @@ const routes = [
   },
   {
     path: '/booking',
-    name: 'BookingHome',
-    component: () => import('@/pages/booking/BookingHome.vue'),
-    meta: { public: true }
+    redirect: '/',
   },
   {
     path: '/booking/:orgId',
@@ -105,6 +103,12 @@ const routes = [
     name: 'Suspended',
     component: () => import('@/pages/subscription/Suspended.vue'),
     meta: { public: false, skipSubCheck: true }
+  },
+  {
+    path: '/salon/freestyle',
+    name: 'FreestyleLanding',
+    component: () => import('@/pages/landings/FreestyleLanding.vue'),
+    meta: { public: true }
   }
 ]
 

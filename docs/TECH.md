@@ -283,7 +283,7 @@ Reset session : `menu`, `annuler`, `restart`, `0`, `قائمة`, `إلغاء`
 
 | Route | Composant | Notes |
 |-------|-----------|-------|
-| `/today` | Today.vue | Prestations non affectées, dropdown no-show/annuler |
+| `/today` | Today.vue | **Refonte en cours** — 3 onglets réceptionniste : File+Non affectés / Planning / Staff. Voir CLAUDE.md § Today.vue |
 | `/admin/rdv` | Rdv.vue | Liste + badge source, clic → modal modification |
 | `/admin/clients` | Clients.vue | Signalement configurable, filtre signalés |
 | `/admin/services` | Services.vue | Toggle statut + WhatsApp, nom AR auto-traduit |
@@ -301,6 +301,18 @@ Reset session : `menu`, `annuler`, `restart`, `0`, `قائمة`, `إلغاء`
 | `/booking` | BookingHome.vue | 1 org → direct infos client / N orgs → liste |
 | `/booking/:orgId` | BookingCalendar.vue | Prestation → date → créneau → confirmation |
 | `/login` | Login.vue | Lien "Prendre RDV en ligne" → /booking |
+
+### Design system — Palette noir / or
+
+| Token CSS | Valeur | Usage |
+|-----------|--------|-------|
+| `--primary` | `#D4AF37` | Or — actions primaires, accents |
+| `--primary-hover` | `#E8CA6E` | Hover boutons |
+| `--warning` | `#F0C040` | Jaune vif — alertes, états "chargé" |
+| `--bg` | `#080807` | Fond global |
+
+Défini dans `frontend/src/assets/css/base.css`. Ne pas hardcoder les couleurs primaires dans les composants.
+Référence visuelle : `today-preview.html` à la racine du projet.
 
 ### Couleurs statuts RDV
 | Statut | Couleur |

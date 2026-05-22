@@ -1,77 +1,135 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, watch } from 'vue'
 import BaseModal from '../modal/BaseModal.vue'
+import CustomSelect from '@/components/common/CustomSelect.vue'
 import { supabase } from '@/lib/supabase'
+import { rankStaff } from '@/composables/useStaffRanking'
 
 const props = defineProps({
-  walkin:   { type: Object, required: true },
-  staff:    { type: Array, default: () => [] },
-  services: { type: Array, default: () => [] }
+  walkin:            { type: Object, required: true },
+  staff:             { type: Array, default: () => [] },
+  services:          { type: Array, default: () => [] },
+  externalConflicts: { type: Object, default: () => ({}) },
+  appointments:      { type: Array, default: () => [] }
 })
 const emit = defineEmits(['close', 'refresh'])
 
-const isLoading      = ref(false)
-const busyStaffIds   = ref(new Set())
-const loadedStaffIds = ref(new Set())
-
-onMounted(async () => {
-  const today = new Date().toLocaleDateString('en-CA')
-  const [{ data: inProgress }, { data: scheduled }] = await Promise.all([
-    supabase.from('appointments').select('appointment_services(staff_id)')
-      .eq('status', 'in_progress')
-      .gte('start_time', today + 'T00:00:00').lte('start_time', today + 'T23:59:59'),
-    supabase.from('appointments').select('appointment_services(staff_id)')
-      .in('status', ['scheduled', 'waiting'])
-      .gte('start_time', today + 'T00:00:00').lte('start_time', today + 'T23:59:59')
-  ])
-  busyStaffIds.value   = new Set((inProgress || []).flatMap(a => (a.appointment_services || []).map(s => s.staff_id)).filter(Boolean))
-  loadedStaffIds.value = new Set((scheduled  || []).flatMap(a => (a.appointment_services || []).map(s => s.staff_id)).filter(Boolean))
-})
+const isLoading = ref(false)
 
 // ── Lignes de prestations ────────────────────────────────────────────────────
-function newLine() { return { id: Date.now() + Math.random(), serviceId: null, staffId: null, staffOpen: false, price: null } }
+function newLine() { return { id: Date.now() + Math.random(), serviceId: null, staffId: null, price: null } }
 
 // Pré-remplir depuis les appointment_services existants du walkin
+const one = v => Array.isArray(v) ? (v[0] ?? null) : (v ?? null)
+
 const existingSvcs = props.walkin.raw?.appointment_services || []
 const lines = ref(
   existingSvcs.length
-    ? existingSvcs.map((s, i) => ({
-        id:        i,
-        svcRowId:  s.id,
-        serviceId: s.service?.id || null,
-        staffId:   s.staff?.id || null,
-        staffOpen: false,
-        price:     s.price_at_booking ?? props.services.find(sv => sv.id === s.service?.id)?.price ?? null
-      }))
+    ? existingSvcs.map((s, i) => {
+        const svc  = one(s.service)
+        const stf  = one(s.staff)
+        return {
+          id:        i,
+          svcRowId:  s.id,
+          serviceId: svc?.id || null,
+          staffId:   stf?.id || null,
+          price:     s.price_at_booking ?? props.services.find(sv => sv.id === svc?.id)?.price ?? null
+        }
+      })
     : [newLine()]
 )
 
 function addLine()      { lines.value.push(newLine()) }
 function removeLine(id) { if (lines.value.length > 1) lines.value = lines.value.filter(l => l.id !== id) }
 
-function staffGridFor(line) {
-  const svc    = props.services.find(s => s.id === line.serviceId)
-  const catId  = svc?.category_id
-  const enriched = props.staff.filter(s => s.is_active !== false).map(s => {
-    const busy      = busyStaffIds.value.has(s.id)
-    const loaded    = !busy && loadedStaffIds.value.has(s.id)
-    const competent = !!(catId && s.categories?.some(c => c.id === catId))
-    return { ...s, busy, loaded, competent }
+watch(() => lines.value.map(l => l.serviceId), (newIds, oldIds) => {
+  newIds.forEach((id, i) => {
+    if (id && id !== oldIds?.[i]) {
+      const svc = props.services.find(s => s.id === id)
+      if (svc?.price != null) lines.value[i].price = svc.price
+    }
   })
-  const score = s => s.busy ? 2 : s.loaded ? 1 : 0
-  const competent = enriched.filter(s => s.competent).sort((a, b) => score(a) - score(b))
-  const others    = enriched.filter(s => !s.competent).sort((a, b) => score(a) - score(b))
-  return competent.length && others.length
-    ? [...competent, { id: '__sep__', _sep: true }, ...others]
-    : [...competent, ...others]
+})
+
+function getRanked(serviceId) {
+  const now = new Date()
+  const targetTime = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`
+  const targetDate = now.toLocaleDateString('en-CA')
+  return rankStaff({
+    staffList:    props.staff.filter(s => s.is_active !== false),
+    serviceId,
+    services:     props.services,
+    targetDate,
+    targetTime,
+    appointments: props.appointments
+  })
 }
 
-function selectedStaffInfo(line) { return staffGridFor(line).find(s => s.id === line.staffId) || null }
-function pickStaff(line, id)     { line.staffId = id; line.staffOpen = false }
+function staffOptionsFor(line) {
+  const ranked = getRanked(line.serviceId)
+  return [
+    { id: null, name: 'Non assigné' },
+    ...ranked.map(sm => ({
+      ...sm,
+      danger: sm._unavailable || undefined,
+      hint:   sm._unavailableReason || undefined,
+      badge:  sm._recommended ? 'Recommandé' : undefined
+    }))
+  ]
+}
+
+// Force staff indisponible — même pattern que RdvModal (watcher post-sélection)
+const forceConfirm = ref({ show: false, lineId: null, staffId: null, prevStaffId: null, message: '' })
+
+watch(
+  () => lines.value.map(l => l.staffId),
+  (newIds, oldIds) => {
+    newIds.forEach((newId, i) => {
+      if (!newId || newId === oldIds?.[i]) return
+      const line = lines.value[i]
+      const sm = getRanked(line.serviceId).find(s => s.id === newId)
+      if (sm?._unavailable) {
+        forceConfirm.value = {
+          show: true,
+          lineId: line.id,
+          staffId: newId,
+          prevStaffId: oldIds?.[i] ?? null,
+          message: `${sm.name} est indisponible (${sm._unavailableReason}). Forcer quand même ?`
+        }
+      }
+    })
+  }
+)
+
+function confirmForce() {
+  forceConfirm.value = { show: false, lineId: null, staffId: null, prevStaffId: null, message: '' }
+}
+
+function cancelForce() {
+  const { lineId, prevStaffId } = forceConfirm.value
+  const line = lines.value.find(l => l.id === lineId)
+  if (line) line.staffId = prevStaffId
+  forceConfirm.value = { show: false, lineId: null, staffId: null, prevStaffId: null, message: '' }
+}
 
 // ── Soumission ───────────────────────────────────────────────────────────────
 const heavyAlert       = ref('')
 const showHeavyConfirm = ref(false)
+const externalAlert    = ref('')
+const showExternalConfirm = ref(false)
+
+function getExternalConflict() {
+  const messages = []
+  for (const line of lines.value) {
+    if (!line.staffId) continue
+    const conflict = props.externalConflicts[line.staffId]
+    if (conflict) {
+      const staffName = props.staff.find(s => s.id === line.staffId)?.name || 'Ce collaborateur'
+      messages.push(`${staffName} est en déplacement externe ${conflict}.`)
+    }
+  }
+  return messages.join(' ')
+}
 
 function getHeavyWarning() {
   for (const line of lines.value) {
@@ -85,10 +143,13 @@ function getHeavyWarning() {
   return ''
 }
 
-const canSubmit = computed(() => lines.value.some(l => l.staffId))
+const missingService = computed(() => lines.value.some(l => l.staffId && !l.serviceId))
+const canSubmit = computed(() => lines.value.some(l => l.serviceId) && !missingService.value)
 
 async function handleServe() {
   if (!canSubmit.value) return
+  const extWarn = getExternalConflict()
+  if (extWarn) { externalAlert.value = extWarn; showExternalConfirm.value = true; return }
   const warn = getHeavyWarning()
   if (warn) { heavyAlert.value = warn; showHeavyConfirm.value = true; return }
   await doServe()
@@ -99,33 +160,33 @@ async function doServe() {
   heavyAlert.value = ''
   isLoading.value = true
   try {
-    const apptId   = props.walkin.id
-    const firstLine = lines.value[0]
+    const apptId      = props.walkin.id
+    const mainStaffId = lines.value.find(l => l.staffId)?.staffId || null
 
-    // Passer l'appointment en in_progress avec le staff de la première ligne
-    await supabase.from('appointments')
-      .update({ status: 'in_progress', staff_id: firstLine.staffId })
-      .eq('id', apptId)
+    // Passer en in_progress uniquement si au moins un staff est assigné
+    const apptUpdate = mainStaffId
+      ? { status: 'in_progress', staff_id: mainStaffId }
+      : { staff_id: null }
+    await supabase.from('appointments').update(apptUpdate).eq('id', apptId)
 
     // Mettre à jour ou insérer chaque ligne
     for (const line of lines.value) {
+      const priceVal = line.price != null && line.price !== '' ? Number(line.price) : null
       if (line.svcRowId) {
-        // Ligne existante → update
         await supabase.from('appointment_services')
-          .update({ service_id: line.serviceId, staff_id: line.staffId })
+          .update({ service_id: line.serviceId, staff_id: line.staffId, price_at_booking: priceVal })
           .eq('id', line.svcRowId)
-      } else if (line.serviceId || line.staffId) {
-        // Nouvelle ligne → insert
+      } else if (line.serviceId) {
         await supabase.from('appointment_services')
-          .insert({ appointment_id: apptId, service_id: line.serviceId, staff_id: line.staffId, price_at_booking: line.price != null && line.price !== '' ? Number(line.price) : null })
+          .insert({ appointment_id: apptId, service_id: line.serviceId, staff_id: line.staffId, price_at_booking: priceVal })
       }
     }
 
     emit('refresh')
     emit('close')
   } catch (e) {
-    console.error('Error serving walkin:', e)
-    alert('Erreur : ' + (e.message || 'Impossible de lancer la prestation'))
+    console.error('Error saving:', e)
+    alert('Erreur : ' + (e.message || 'Impossible d\'enregistrer'))
   } finally {
     isLoading.value = false
   }
@@ -133,18 +194,23 @@ async function doServe() {
 </script>
 
 <template>
-  <BaseModal @close="$emit('close')">
-    <header class="modal-title">Lancer la prestation</header>
+  <BaseModal title="Prestations du client" @close="$emit('close')">
 
     <div class="modal-body">
 
       <!-- Bannière client -->
-      <div class="walkin-client-banner">
-        <div class="walkin-avatar">{{ walkin.client?.charAt(0)?.toUpperCase() || '?' }}</div>
+      <div class="client-banner">
+        <div class="client-avatar">{{ walkin.client?.charAt(0)?.toUpperCase() || '?' }}</div>
         <div>
-          <div class="walkin-client-name">{{ walkin.client }}</div>
-          <div class="walkin-client-meta">Arrivée {{ walkin.time }}</div>
+          <div class="client-name">{{ walkin.client }}</div>
+          <div class="client-meta">Arrivée {{ walkin.time }}</div>
         </div>
+      </div>
+
+      <!-- Message aide si walkin sans prestation définie -->
+      <div v-if="!existingSvcs.length" class="hint-box">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        Aucune prestation définie — sélectionnez une ou plusieurs prestations pour ce client.
       </div>
 
       <!-- Lignes prestations -->
@@ -152,54 +218,41 @@ async function doServe() {
         <label>Prestations</label>
 
         <div class="lines-list">
-          <div v-for="(line, idx) in lines" :key="line.id" class="line-row">
-            <div class="line-num">{{ idx + 1 }}</div>
-
-            <!-- Service -->
-            <select class="line-select" v-model="line.serviceId" @change="line.price = services.find(s => s.id === line.serviceId)?.price ?? null">
-              <option :value="null">Prestation (optionnel)</option>
-              <option v-for="s in services" :key="s.id" :value="s.id">{{ s.name }}</option>
-            </select>
-
-            <!-- Staff -->
-            <div class="staff-select" :class="{ open: line.staffOpen }">
-              <button type="button" class="staff-trigger" @click="line.staffOpen = !line.staffOpen">
-                <template v-if="line.staffId">
-                  <span class="avail-dot" :class="selectedStaffInfo(line)?.busy ? 'dot-busy' : selectedStaffInfo(line)?.loaded ? 'dot-loaded' : 'dot-free'"></span>
-                  <span class="trigger-name">{{ selectedStaffInfo(line)?.name }}</span>
-                </template>
-                <span v-else class="trigger-placeholder">Collaborateur *</span>
-                <svg class="trigger-chevron" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+          <div v-for="(line, idx) in lines" :key="line.id" class="line-card">
+            <!-- Ligne haut : numéro + service + supprimer -->
+            <div class="line-top">
+              <span class="line-num">{{ idx + 1 }}</span>
+              <CustomSelect
+                v-model="line.serviceId"
+                :options="[{ id: null, name: 'Choisir une prestation *' }, ...services]"
+                placeholder="Prestation *"
+                :iconType="'none'"
+                class="field-service"
+              />
+              <button v-if="lines.length > 1" type="button" class="remove-line-btn" @click="removeLine(line.id)">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
               </button>
-              <div v-if="line.staffOpen" class="staff-dropdown">
-                <button type="button" class="staff-option" @click="pickStaff(line, null)">
-                  <span style="color:var(--text-muted);font-size:13px">Non assigné</span>
-                </button>
-                <div class="staff-sep"></div>
-                <template v-for="s in staffGridFor(line)" :key="s.id">
-                  <div v-if="s._sep" class="staff-sep-label">Autres</div>
-                  <button v-else type="button" class="staff-option" :class="{ 'opt-selected': line.staffId === s.id }" @click="pickStaff(line, s.id)">
-                    <span class="avail-dot" :class="s.busy ? 'dot-busy' : s.loaded ? 'dot-loaded' : 'dot-free'"></span>
-                    <span class="option-name">{{ s.name }}</span>
-                    <svg v-if="line.staffId === s.id" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" style="margin-left:auto;flex-shrink:0;color:var(--primary)"><polyline points="20 6 9 17 4 12"/></svg>
-                  </button>
-                </template>
+              <div v-else class="remove-placeholder"></div>
+            </div>
+            <!-- Ligne bas : staff + prix -->
+            <div class="line-bottom">
+              <CustomSelect
+                v-model="line.staffId"
+                :options="staffOptionsFor(line)"
+                placeholder="Collaborateur"
+                :iconType="'none'"
+                :disabled="!line.serviceId"
+                class="field-staff"
+              />
+              <div class="price-wrap">
+                <input v-model="line.price" type="number" min="0" step="1" placeholder="—" class="price-input" />
+                <span class="price-suffix">DH</span>
               </div>
             </div>
-
-            <!-- Prix -->
-            <div class="price-inline-wrap">
-              <input v-model="line.price" type="number" min="0" step="1" placeholder="—" class="price-inline-input" />
-              <span class="price-inline-suffix">DH</span>
-            </div>
-
-            <!-- Supprimer -->
-            <button v-if="lines.length > 1" type="button" class="remove-line-btn" @click="removeLine(line.id)">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-            </button>
-            <div v-else style="width:28px;flex-shrink:0"></div>
           </div>
         </div>
+
+        <p v-if="missingService" class="form-error" style="margin:4px 0 0">Une prestation est requise pour chaque collaborateur sélectionné.</p>
 
         <button type="button" class="add-line-btn" @click="addLine">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
@@ -212,15 +265,43 @@ async function doServe() {
     <div class="modal-actions">
       <button class="btn btn-secondary" @click="$emit('close')">Annuler</button>
       <button class="btn btn-primary" :disabled="!canSubmit || isLoading" @click="handleServe">
-        {{ isLoading ? 'Lancement…' : 'Lancer' }}
+        {{ isLoading ? 'Enregistrement…' : 'Enregistrer' }}
       </button>
     </div>
 
-    <!-- Confirmation service complexe -->
-    <BaseModal v-if="showHeavyConfirm" @close="showHeavyConfirm = false">
-      <header class="modal-title">Prestation complexe</header>
+    <!-- Confirmation force staff indisponible -->
+    <BaseModal title="Collaborateur indisponible" v-if="forceConfirm.show" @close="cancelForce">
       <div class="modal-body">
-        <div class="heavy-alert">
+        <div class="warn-box">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          {{ forceConfirm.message }}
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-secondary" @click="cancelForce">Annuler</button>
+        <button class="btn btn-primary" @click="confirmForce">Forcer quand même</button>
+      </div>
+    </BaseModal>
+
+    <!-- Confirmation déplacement externe -->
+    <BaseModal title="Déplacement externe" v-if="showExternalConfirm" @close="showExternalConfirm = false">
+      <div class="modal-body">
+        <div class="warn-box">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          {{ externalAlert }}
+        </div>
+        <p class="confirm-hint">Voulez-vous modifier votre sélection ou confirmer quand même ?</p>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-secondary" @click="showExternalConfirm = false">Modifier</button>
+        <button class="btn btn-primary" @click="showExternalConfirm = false; doServe()">Confirmer quand même</button>
+      </div>
+    </BaseModal>
+
+    <!-- Confirmation service complexe -->
+    <BaseModal title="Prestation complexe" v-if="showHeavyConfirm" @close="showHeavyConfirm = false">
+      <div class="modal-body">
+        <div class="warn-box">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
           {{ heavyAlert }}
         </div>
@@ -228,58 +309,76 @@ async function doServe() {
       </div>
       <div class="modal-actions">
         <button class="btn btn-secondary" @click="showHeavyConfirm = false">Modifier</button>
-        <button class="btn btn-primary" @click="doServe">Confirmer quand même</button>
+        <button class="btn btn-primary" @click="doServe">Enregistrer quand même</button>
       </div>
     </BaseModal>
   </BaseModal>
 </template>
 
 <style scoped>
-.walkin-client-banner { display: flex; align-items: center; gap: 14px; padding: 14px; background: var(--bg-main); border: 1px solid var(--border); border-radius: 10px; margin-bottom: 4px; }
-.walkin-avatar { width: 44px; height: 44px; border-radius: 50%; background: var(--primary-soft); color: var(--primary-text); font-size: 18px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-.walkin-client-name { font-size: 15px; font-weight: 600; color: var(--text-main); }
-.walkin-client-meta { font-size: 12.5px; color: var(--text-muted); margin-top: 2px; }
+/* ── Client banner ── */
+.client-banner { display: flex; align-items: center; gap: 13px; padding: 13px 15px; background: var(--bg-soft); border: 1px solid var(--border); border-radius: 13px; }
+.client-avatar { width: 44px; height: 44px; border-radius: 50%; background: var(--primary-soft); color: var(--primary); font-size: 18px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 0 0 2px var(--primary-mid); }
+.client-name { font-size: 14px; font-weight: 700; color: var(--text-main); }
+.client-meta { font-size: 11.5px; color: var(--text-muted); margin-top: 2px; }
 
+/* ── Lines ── */
 .lines-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 8px; }
-.line-row   { display: flex; align-items: center; gap: 8px; }
-.line-num   { width: 22px; height: 22px; border-radius: 50%; background: var(--primary-soft); color: var(--primary-text); font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 
-.line-select { flex: 1; min-width: 0; padding: 8px 10px; border: 1.5px solid var(--border); border-radius: 9px; font-size: 13px; background: #f8fafc; color: var(--text-main); cursor: pointer; }
-.line-select:focus { outline: none; border-color: var(--primary); }
+.line-card {
+  background: var(--bg-soft);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 10px 12px;
+  display: flex; flex-direction: column; gap: 8px;
+}
 
-.price-inline-wrap { position: relative; width: 80px; flex-shrink: 0; }
-.price-inline-input { width: 100%; padding: 7px 26px 7px 8px; border: 1.5px solid var(--border); border-radius: 9px; font-size: 12.5px; font-family: inherit; color: var(--text-main); background: #f8fafc; box-sizing: border-box; }
-.price-inline-input:focus { outline: none; border-color: var(--primary); }
-.price-inline-suffix { position: absolute; right: 7px; top: 50%; transform: translateY(-50%); font-size: 10px; color: var(--text-muted); pointer-events: none; font-weight: 700; }
+.line-top {
+  display: grid; grid-template-columns: 22px 1fr 28px;
+  align-items: center; gap: 8px;
+}
+.line-bottom {
+  display: grid; grid-template-columns: 1fr 110px;
+  align-items: center; gap: 8px;
+  padding-left: 30px;
+}
 
-.remove-line-btn { width: 28px; height: 28px; flex-shrink: 0; border: 1.5px solid #fca5a5; background: transparent; border-radius: 7px; color: #dc2626; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all .12s; }
-.remove-line-btn:hover { background: #fee2e2; }
+.line-num { width: 22px; height: 22px; border-radius: 50%; background: var(--primary-soft); color: var(--primary); font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.remove-placeholder { width: 28px; flex-shrink: 0; }
+.field-service { min-width: 0; }
+.field-staff   { min-width: 0; }
 
-.add-line-btn { display: flex; align-items: center; gap: 6px; border: 1.5px dashed var(--border); background: transparent; border-radius: 9px; padding: 8px 14px; font-size: 13px; font-weight: 600; color: var(--text-muted); cursor: pointer; width: 100%; transition: all .12s; }
-.add-line-btn:hover { border-color: var(--primary); color: var(--primary); background: #eff6ff; }
+.price-wrap {
+  position: relative; display: flex; align-items: center;
+}
+.price-input {
+  width: 100%; padding: 8px 28px 8px 10px;
+  border: 1px solid var(--input-border); border-radius: 8px;
+  font-size: 13px; font-family: inherit; font-weight: 600;
+  background: var(--input-bg); color: var(--input-text);
+  transition: border-color .15s;
+  -moz-appearance: textfield;
+}
+.price-input::-webkit-inner-spin-button,
+.price-input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+.price-input:focus { outline: none; border-color: var(--primary); }
+.price-suffix {
+  position: absolute; right: 9px;
+  font-size: 10.5px; font-weight: 700;
+  color: var(--text-muted); pointer-events: none;
+  user-select: none;
+}
 
-.staff-select { position: relative; flex: 1; min-width: 0; }
-.staff-trigger { display: flex; align-items: center; gap: 7px; width: 100%; padding: 8px 10px; border: 1.5px solid var(--border); border-radius: 9px; background: #f8fafc; cursor: pointer; font-size: 13px; text-align: left; transition: border-color .15s; }
-.staff-trigger:hover, .staff-select.open .staff-trigger { border-color: var(--primary); background: #fff; }
-.trigger-name        { flex: 1; font-weight: 600; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.trigger-placeholder { flex: 1; color: var(--text-muted); }
-.trigger-chevron { flex-shrink: 0; color: var(--text-muted); transition: transform .2s; }
-.staff-select.open .trigger-chevron { transform: rotate(180deg); }
+/* ── Actions ── */
+.remove-line-btn { width: 28px; height: 28px; flex-shrink: 0; border: 1px solid rgba(220,38,38,.25); background: transparent; border-radius: 7px; color: var(--red); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all .12s; }
+.remove-line-btn:hover { background: var(--red-soft); }
 
-.staff-dropdown { position: absolute; top: calc(100% + 4px); left: 0; right: 0; background: #fff; border: 1.5px solid var(--border); border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,.1); z-index: 200; overflow: hidden; max-height: 220px; overflow-y: auto; }
-.staff-sep       { height: 1px; background: var(--border); margin: 2px 0; }
-.staff-sep-label { padding: 4px 12px; font-size: 11px; font-weight: 600; color: var(--text-muted); background: var(--bg-main); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); letter-spacing: .04em; text-transform: uppercase; }
-.staff-option { display: flex; align-items: center; gap: 8px; width: 100%; padding: 8px 12px; border: none; background: transparent; cursor: pointer; text-align: left; transition: background .1s; }
-.staff-option:hover { background: #f8fafc; }
-.staff-option.opt-selected { background: #eff6ff; }
-.option-name { flex: 1; font-size: 13px; font-weight: 600; color: var(--text-main); }
+.add-line-btn { display: flex; align-items: center; gap: 6px; border: 1.5px dashed var(--border-strong); background: transparent; border-radius: 10px; padding: 9px 14px; font-size: 13px; font-weight: 600; color: var(--text-muted); cursor: pointer; width: 100%; transition: all .12s; font-family: inherit; }
+.add-line-btn:hover { border-color: var(--primary); color: var(--primary); background: var(--primary-soft); }
 
-.heavy-alert { display: flex; align-items: flex-start; gap: 8px; padding: 10px 13px; background: #fffbeb; border: 1.5px solid #f59e0b; border-radius: 9px; color: #92400e; font-size: 13px; line-height: 1.45; }
-.heavy-alert svg { flex-shrink: 0; margin-top: 1px; color: #f59e0b; }
-.confirm-hint { font-size: 13px; color: var(--text-muted); margin-top: 10px; line-height: 1.5; }
-
-.avail-dot  { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-.dot-free   { background: #22c55e; }
-.dot-loaded { background: #f59e0b; }
-.dot-busy   { background: #3b82f6; }
+/* ── Hint / warn ── */
+.hint-box { display: flex; align-items: flex-start; gap: 8px; padding: 10px 13px; background: var(--blue-soft); border: 1px solid rgba(29,78,216,.2); border-radius: 10px; color: var(--blue); font-size: 13px; line-height: 1.45; }
+.hint-box svg { flex-shrink: 0; margin-top: 1px; color: var(--blue); }
+.confirm-hint { font-size: 13px; color: var(--text-muted); margin-top: 8px; line-height: 1.5; }
 </style>
+

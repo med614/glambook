@@ -102,10 +102,10 @@ function activeCount() {
 }
 
 /* Couleur bord gauche selon charge */
-.staff-card.free   { border-left: 4px solid #22c55e; }
-.staff-card.busy   { border-left: 4px solid #3b82f6; }
-.staff-card.loaded { border-left: 4px solid #f59e0b; }
-.staff-card.full   { border-left: 4px solid #ef4444; }
+.staff-card.free   { border-left: 4px solid var(--green); }
+.staff-card.busy   { border-left: 4px solid var(--primary); }
+.staff-card.loaded { border-left: 4px solid var(--orange); }
+.staff-card.full   { border-left: 4px solid var(--red); }
 
 /* EN-TÊTE */
 .staff-header {
@@ -145,10 +145,10 @@ function activeCount() {
   margin-top: 3px;
 }
 
-.free   .status-badge { background: #dcfce7; color: #166534; }
-.busy   .status-badge { background: #dbeafe; color: #1e40af; }
-.loaded .status-badge { background: #fef3c7; color: #92400e; }
-.full   .status-badge { background: #fee2e2; color: #991b1b; }
+.free   .status-badge { background: var(--green-soft);   color: var(--green); }
+.busy   .status-badge { background: var(--primary-soft); color: var(--primary); }
+.loaded .status-badge { background: var(--orange-soft);  color: var(--orange); }
+.full   .status-badge { background: var(--red-soft);     color: var(--red); }
 
 .staff-count {
   font-size: 11px;
@@ -190,11 +190,11 @@ function activeCount() {
   padding: 10px 12px;
   border-radius: 8px;
   border: 1px solid var(--border);
-  background: #fff;
+  background: var(--bg-card);
 }
 
-.appt-row.current  { background: #f0fdf4; border-color: #bbf7d0; }
-.appt-row.upcoming { background: #eff6ff; border-color: #bfdbfe; }
+.appt-row.current  { background: var(--green-soft);   border-color: rgba(21,128,61,.2); }
+.appt-row.upcoming { background: var(--primary-soft);  border-color: rgba(168,129,10,.2); }
 .appt-row.past     { opacity: 0.5; filter: grayscale(1); }
 .appt-row.walkin   { border-style: dashed; }
 
@@ -222,16 +222,16 @@ function activeCount() {
   font-weight: 700;
   padding: 2px 6px;
   border-radius: 999px;
-  background: #fef3c7;
-  color: #92400e;
-  border: 1px solid #fde68a;
+  background: var(--orange-soft);
+  color: var(--orange);
+  border: 1px solid rgba(217,119,6,.25);
 }
 
 .finish-btn {
   display: flex;
   align-items: center;
   gap: 5px;
-  background: #1e293b;
+  background: var(--primary);
   color: #fff;
   border: none;
   padding: 6px 12px;
@@ -243,13 +243,13 @@ function activeCount() {
   flex-shrink: 0;
   transition: background 0.15s;
 }
-.finish-btn:hover { background: #0f172a; }
+.finish-btn:hover { background: var(--primary-light); }
 
 .done-badge {
   font-size: 10px;
   font-weight: 700;
   text-transform: uppercase;
-  color: #94a3b8;
+  color: var(--text-light);
   letter-spacing: 0.05em;
   flex-shrink: 0;
 }

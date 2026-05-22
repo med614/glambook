@@ -1,0 +1,1770 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Agenda — Proposition redesign</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Sora:wght@600;700;800&display=swap" rel="stylesheet" />
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:      #F5F2EA;
+  --s1:      #FFFFFF;
+  --s2:      #EEE9DC;
+  --s3:      #E5DFD0;
+  --border:  rgba(160,130,40,.15);
+  --border2: rgba(160,130,40,.3);
+  --p:       #A8810A;
+  --p2:      #C49B12;
+  --pglow:   rgba(168,129,10,.2);
+  --text:    #1C1A10;
+  --muted:   #7A6A2A;
+  --light:   #B8A060;
+  --green:   #15803D;
+  --green-s: rgba(21,128,61,.1);
+  --blue:    #1D4ED8;
+  --blue-s:  rgba(29,78,216,.1);
+  --purple:  #7C3AED;
+  --purple-s:rgba(124,58,237,.1);
+  --orange:  #C2410C;
+  --orange-s:rgba(194,65,12,.1);
+  --red:     #DC2626;
+  --red-s:   rgba(220,38,38,.1);
+  --gold:    #A8810A;
+  --gold-s:  rgba(168,129,10,.1);
+}
+
+body {
+  font-family: 'Inter', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  font-size: 13px;
+}
+
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(168,129,10,.2); border-radius: 2px; }
+
+/* ─── TOPBAR ─── */
+.topbar {
+  display: flex; align-items: center; gap: 16px;
+  padding: 0 24px; height: 56px;
+  background: rgba(245,242,234,.96);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0; z-index: 20; position: relative;
+}
+.topbar-left { display: flex; flex-direction: column; gap: 1px; }
+.topbar-title {
+  font-family: 'Sora', sans-serif;
+  font-size: 17px; font-weight: 700; color: var(--text);
+  display: flex; align-items: center; gap: 8px;
+}
+.tb-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--p); box-shadow: 0 0 8px var(--pglow); }
+.topbar-sub { font-size: 11px; color: var(--muted); font-weight: 500; }
+
+.topbar-stats { display: flex; align-items: center; gap: 5px; margin-left: 20px; }
+.stat-chip {
+  display: flex; align-items: center; gap: 5px;
+  padding: 4px 10px; border-radius: 20px;
+  background: var(--s2); border: 1px solid var(--border2);
+  font-size: 11px; font-weight: 600; color: var(--muted);
+  white-space: nowrap;
+}
+.stat-chip .n { font-size: 13px; font-weight: 800; }
+.stat-chip.c-blue   .n { color: var(--blue); }
+.stat-chip.c-green  .n { color: var(--green); }
+.stat-chip.c-gold   .n { color: var(--gold); }
+.stat-chip.c-muted  .n { color: var(--muted); }
+.stat-chip.c-rev    .n { color: var(--p); }
+
+.topbar-right { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+
+.btn-primary {
+  display: flex; align-items: center; gap: 6px;
+  padding: 7px 14px; border-radius: 10px;
+  background: var(--p); color: #fff; border: none;
+  font-size: 12px; font-weight: 700; cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  box-shadow: 0 0 16px var(--pglow);
+  transition: background .15s, transform .1s;
+}
+.btn-primary:hover { background: var(--p2); transform: translateY(-1px); }
+
+.btn-outline {
+  display: flex; align-items: center; gap: 6px;
+  padding: 6px 12px; border-radius: 9px;
+  background: transparent; color: var(--muted);
+  border: 1px solid var(--border2);
+  font-size: 12px; font-weight: 600; cursor: pointer;
+  font-family: 'Inter', sans-serif; transition: all .15s;
+}
+.btn-outline:hover { color: var(--text); border-color: rgba(0,0,0,.2); background: rgba(0,0,0,.03); }
+.btn-outline.active { color: var(--p); border-color: var(--p); background: rgba(168,129,10,.06); }
+
+/* ─── VIEW TOGGLE ─── */
+.view-toggle {
+  display: flex; border: 1px solid var(--border2); border-radius: 9px; overflow: hidden;
+}
+.vt-btn {
+  display: flex; align-items: center; gap: 5px;
+  padding: 6px 12px;
+  background: transparent; border: none;
+  font-size: 12px; font-weight: 600; color: var(--muted);
+  cursor: pointer; font-family: 'Inter', sans-serif;
+  transition: all .15s;
+}
+.vt-btn:not(:last-child) { border-right: 1px solid var(--border2); }
+.vt-btn:hover { background: rgba(0,0,0,.03); color: var(--text); }
+.vt-btn.active { background: var(--s2); color: var(--p); }
+
+/* ─── FILTER BAR ─── */
+.filter-bar {
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 24px;
+  background: var(--s1);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0; flex-wrap: wrap;
+}
+
+.filter-input {
+  display: flex; align-items: center; gap: 7px;
+  padding: 7px 12px;
+  background: var(--bg); border: 1px solid var(--border2);
+  border-radius: 10px; color: var(--text);
+  font-family: 'Inter', sans-serif; font-size: 12px;
+  cursor: text; transition: border-color .15s, box-shadow .15s;
+  min-width: 200px;
+}
+.filter-input:focus-within {
+  border-color: var(--p);
+  box-shadow: 0 0 0 3px var(--pglow);
+}
+.filter-input input {
+  border: none; background: transparent; outline: none;
+  font-family: inherit; font-size: inherit; color: inherit;
+  flex: 1; min-width: 0;
+}
+.filter-input input::placeholder { color: var(--light); }
+.filter-input svg { color: var(--light); flex-shrink: 0; }
+
+.filter-select {
+  display: flex; align-items: center; gap: 6px;
+  padding: 7px 10px 7px 12px;
+  background: var(--bg); border: 1px solid var(--border2);
+  border-radius: 10px; color: var(--muted);
+  font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 600;
+  cursor: pointer; transition: all .15s; white-space: nowrap;
+}
+.filter-select:hover { border-color: var(--border2); color: var(--text); background: rgba(0,0,0,.02); }
+.filter-select.has-value { color: var(--p); border-color: var(--p); background: var(--gold-s); }
+.filter-select svg { flex-shrink: 0; }
+
+.filter-sep { width: 1px; height: 20px; background: var(--border2); flex-shrink: 0; }
+
+.filter-clear {
+  font-size: 11px; font-weight: 600; color: var(--muted);
+  cursor: pointer; padding: 4px 8px; border-radius: 7px;
+  border: none; background: transparent;
+  transition: all .15s; font-family: 'Inter', sans-serif;
+}
+.filter-clear:hover { color: var(--red); background: rgba(220,38,38,.06); }
+
+/* ─── MAIN CONTENT ─── */
+.main { flex: 1; overflow: hidden; display: flex; flex-direction: column; }
+
+/* ─── TABLE HEADER ─── */
+.table-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 24px 8px;
+  flex-shrink: 0;
+}
+.table-count {
+  font-size: 11.5px; color: var(--muted); font-weight: 600;
+  display: flex; align-items: center; gap: 6px;
+}
+.table-count strong { color: var(--text); font-size: 13px; }
+
+.table-opts { display: flex; align-items: center; gap: 6px; }
+.opt-btn {
+  display: flex; align-items: center; gap: 5px;
+  padding: 5px 10px; border-radius: 8px;
+  background: transparent; border: 1px solid var(--border);
+  color: var(--muted); font-size: 11px; font-weight: 600;
+  cursor: pointer; font-family: inherit; transition: all .15s;
+}
+.opt-btn:hover { border-color: var(--border2); color: var(--text); }
+
+/* ─── TABLE ─── */
+.table-wrap { flex: 1; overflow-y: auto; padding: 0 24px 24px; }
+
+table {
+  width: 100%; border-collapse: separate; border-spacing: 0 4px;
+}
+thead th {
+  padding: 8px 14px;
+  font-size: 10px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .07em; color: var(--light);
+  text-align: left; white-space: nowrap;
+  position: sticky; top: 0; background: var(--bg); z-index: 2;
+}
+thead th:first-child { border-radius: 8px 0 0 8px; }
+thead th:last-child { border-radius: 0 8px 8px 0; }
+
+tbody tr {
+  background: var(--s1);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: box-shadow .15s, transform .1s;
+}
+tbody tr:hover {
+  box-shadow: 0 2px 12px rgba(0,0,0,.07);
+  transform: translateY(-1px);
+}
+tbody tr.selected {
+  box-shadow: 0 0 0 1.5px var(--p), 0 2px 12px rgba(168,129,10,.1);
+}
+
+tbody td {
+  padding: 12px 14px;
+  vertical-align: middle;
+}
+tbody td:first-child { border-radius: 12px 0 0 12px; }
+tbody td:last-child { border-radius: 0 12px 12px 0; }
+
+/* ─── TABLE CELLS ─── */
+.td-time {
+  font-family: 'Sora', sans-serif;
+  font-size: 13px; font-weight: 700; color: var(--muted);
+  white-space: nowrap;
+}
+.td-time-date { font-size: 10px; font-weight: 500; color: var(--light); margin-top: 1px; }
+
+.td-client { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.td-av {
+  width: 34px; height: 34px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: 800; flex-shrink: 0;
+}
+.av0 { background: rgba(168,129,10,.15); color: var(--p); }
+.av1 { background: rgba(29,78,216,.12);  color: var(--blue); }
+.av2 { background: rgba(21,128,61,.12);  color: var(--green); }
+.av3 { background: rgba(124,58,237,.12); color: var(--purple); }
+
+.td-client-info { min-width: 0; }
+.td-name { font-size: 13px; font-weight: 700; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.td-phone { font-size: 11px; color: var(--muted); margin-top: 1px; }
+
+.td-svc { min-width: 0; }
+.td-svc-name { font-size: 12.5px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.td-svc-more { font-size: 10.5px; color: var(--muted); margin-top: 2px; }
+
+.td-staff { display: flex; align-items: center; gap: 7px; white-space: nowrap; }
+.td-staff-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.td-staff-name { font-size: 12px; font-weight: 600; color: var(--text); }
+
+/* ─── BADGES ─── */
+.badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 9px; border-radius: 20px;
+  font-size: 10.5px; font-weight: 700; white-space: nowrap;
+}
+.badge-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+
+/* Statuts */
+.b-scheduled  { background: var(--blue-s);   color: var(--blue);   }
+.b-confirmed  { background: var(--green-s);  color: var(--green);  }
+.b-inprogress { background: var(--gold-s);   color: var(--gold);   }
+.b-cancelled  { background: var(--orange-s); color: var(--orange); }
+.b-noshow     { background: var(--red-s);    color: var(--red);    }
+.b-completed  { background: rgba(0,0,0,.06); color: var(--light);  }
+
+/* Sources */
+.b-salon    { background: rgba(0,0,0,.06);     color: var(--muted);   }
+.b-phone    { background: var(--blue-s);        color: var(--blue);    }
+.b-whatsapp { background: var(--green-s);       color: var(--green);   }
+.b-online   { background: var(--purple-s);      color: var(--purple);  }
+.b-walkin   { background: rgba(168,129,10,.1);  color: var(--gold);    }
+
+.td-price {
+  font-family: 'Sora', sans-serif;
+  font-size: 13px; font-weight: 700; color: var(--text);
+  white-space: nowrap; text-align: right;
+}
+.td-price small { font-size: 10px; font-weight: 500; color: var(--muted); margin-left: 2px; }
+
+/* ─── ACTIONS ─── */
+.td-actions { text-align: right; position: relative; }
+.actions-btn {
+  width: 30px; height: 30px; border-radius: 8px;
+  background: transparent; border: 1px solid var(--border);
+  color: var(--light); cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center;
+  transition: all .15s;
+}
+.actions-btn:hover { border-color: var(--border2); color: var(--text); background: rgba(0,0,0,.04); }
+
+.dropdown {
+  position: absolute; right: 14px; top: calc(100% - 4px);
+  background: var(--s1);
+  border: 1px solid var(--border2);
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0,0,0,.12);
+  min-width: 160px; z-index: 50;
+  overflow: hidden;
+  display: none;
+}
+.dropdown.open { display: block; }
+.dd-item {
+  display: flex; align-items: center; gap: 9px;
+  padding: 10px 14px;
+  font-size: 12px; font-weight: 600; color: var(--text);
+  cursor: pointer; transition: background .1s;
+  white-space: nowrap;
+}
+.dd-item:hover { background: var(--bg); }
+.dd-item.danger { color: var(--red); }
+.dd-item.danger:hover { background: var(--red-s); }
+.dd-sep { height: 1px; background: var(--border); margin: 3px 0; }
+
+/* ─── SOURCE ICON ─── */
+.src-icon {
+  width: 22px; height: 22px; border-radius: 6px;
+  display: inline-flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+
+/* ─── NOW BAR ─── */
+.now-row td { padding: 0 14px; }
+.now-bar-line {
+  display: flex; align-items: center; gap: 8px;
+  padding: 4px 0;
+}
+.now-line { flex: 1; height: 1px; background: var(--p); opacity: .4; }
+.now-label {
+  font-size: 10px; font-weight: 800; color: var(--p);
+  background: var(--gold-s); border: 1px solid rgba(168,129,10,.25);
+  padding: 2px 8px; border-radius: 20px; white-space: nowrap;
+}
+
+/* ─── EMPTY ─── */
+.empty-state {
+  display: flex; flex-direction: column; align-items: center;
+  justify-content: center; gap: 12px; padding: 80px 24px;
+  color: var(--muted); text-align: center;
+}
+.empty-state svg { opacity: .3; }
+
+/* ─── MODAL OVERLAY ─── */
+.modal-overlay {
+  position: fixed; inset: 0; z-index: 100;
+  background: rgba(20,16,8,.45);
+  backdrop-filter: blur(4px);
+  display: flex; align-items: center; justify-content: center; padding: 20px;
+  opacity: 0; pointer-events: none; transition: opacity .2s;
+}
+.modal-overlay.open { opacity: 1; pointer-events: all; }
+
+.modal {
+  background: var(--s1);
+  border: 1px solid var(--border2); border-radius: 20px;
+  box-shadow: 0 24px 64px rgba(0,0,0,.16);
+  width: 580px; max-width: 100%; max-height: 90vh;
+  display: flex; flex-direction: column;
+  transform: translateY(12px); transition: transform .2s;
+}
+.modal-overlay.open .modal { transform: translateY(0); }
+
+.modal-header {
+  display: flex; align-items: center; gap: 10px;
+  padding: 20px 24px 18px;
+  border-bottom: 1px solid var(--border); flex-shrink: 0;
+}
+.modal-header-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--p); box-shadow: 0 0 8px var(--pglow); flex-shrink: 0;
+}
+.modal-title {
+  font-family: 'Sora', sans-serif;
+  font-size: 16px; font-weight: 700; color: var(--text); flex: 1;
+}
+.modal-close {
+  width: 32px; height: 32px; border-radius: 9px;
+  background: transparent; border: 1px solid var(--border);
+  color: var(--muted); cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all .15s;
+}
+.modal-close:hover { background: rgba(0,0,0,.05); color: var(--text); }
+
+.modal-body { flex: 1; overflow-y: auto; padding: 22px 24px; display: flex; flex-direction: column; gap: 18px; }
+
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.form-group { display: flex; flex-direction: column; gap: 6px; }
+.form-label {
+  font-size: 10.5px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .07em; color: var(--light);
+}
+.form-input {
+  padding: 10px 13px;
+  background: var(--bg); border: 1px solid var(--border2);
+  border-radius: 10px; color: var(--text);
+  font-family: 'Inter', sans-serif; font-size: 13px;
+  outline: none; transition: border-color .15s, box-shadow .15s;
+}
+.form-input:focus { border-color: var(--p); box-shadow: 0 0 0 3px var(--pglow); }
+.form-input::placeholder { color: var(--light); }
+
+.form-divider { height: 1px; background: var(--border); }
+
+.service-pick-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 12px;
+  background: var(--bg); border: 1.5px solid var(--border);
+  border-radius: 11px; transition: border-color .15s;
+}
+.service-pick-row.selected { border-color: var(--p); background: var(--gold-s); }
+.sp-check {
+  width: 18px; height: 18px; border-radius: 5px;
+  border: 1.5px solid var(--border2);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; cursor: pointer; transition: all .15s;
+}
+.service-pick-row.selected .sp-check { background: var(--p); border-color: var(--p); color: #fff; }
+.sp-info { flex: 1; }
+.sp-name { font-size: 12.5px; font-weight: 600; color: var(--text); }
+.sp-dur  { font-size: 11px; color: var(--muted); }
+.sp-price { font-size: 12px; font-weight: 700; color: var(--p); }
+
+.modal-footer {
+  display: flex; align-items: center; justify-content: flex-end; gap: 8px;
+  padding: 16px 24px; border-top: 1px solid var(--border); flex-shrink: 0;
+}
+.btn-cancel {
+  padding: 9px 18px; border-radius: 10px;
+  background: transparent; border: 1px solid var(--border2);
+  color: var(--muted); font-family: inherit;
+  font-size: 13px; font-weight: 600; cursor: pointer; transition: all .15s;
+}
+.btn-cancel:hover { background: rgba(0,0,0,.04); color: var(--text); }
+.btn-save {
+  padding: 9px 22px; border-radius: 10px;
+  background: var(--p); color: #fff; border: none;
+  font-family: inherit; font-size: 13px; font-weight: 700; cursor: pointer;
+  box-shadow: 0 0 16px var(--pglow); transition: background .15s;
+}
+.btn-save:hover { background: var(--p2); }
+
+/* ─────────────────────────────────────────────
+   PLANNING VIEW
+───────────────────────────────────────────── */
+.planning-view {
+  display: none; flex: 1; overflow: hidden; flex-direction: column;
+}
+.planning-view.active { display: flex; }
+
+/* Outer scroll (both axes) */
+.pl-outer { flex: 1; overflow: auto; }
+.pl-inner { min-width: 1060px; position: relative; }
+
+/* Sticky staff header */
+.pl-header {
+  display: flex; position: sticky; top: 0; z-index: 10;
+  background: var(--s1);
+  border-bottom: 2px solid var(--border2);
+}
+.pl-corner {
+  width: 56px; flex-shrink: 0;
+  position: sticky; left: 0; z-index: 12;
+  background: var(--s1);
+  border-right: 1px solid var(--border);
+}
+.pl-col-hd {
+  flex: 1; min-width: 150px;
+  padding: 10px 14px;
+  display: flex; align-items: center; gap: 9px;
+  border-right: 1px solid var(--border);
+}
+.pl-col-hd.absent { opacity: .45; }
+.pl-hd-info { flex: 1; min-width: 0; }
+.pl-hd-name {
+  font-size: 12.5px; font-weight: 700; color: var(--text);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.pl-hd-status { font-size: 10px; font-weight: 600; margin-top: 1px; }
+.pl-hd-status.free   { color: var(--green); }
+.pl-hd-status.busy   { color: var(--p); }
+.pl-hd-status.loaded { color: var(--gold); }
+.pl-hd-status.absent { color: var(--muted); }
+
+/* Grid body */
+.pl-body { display: flex; height: 840px; /* 12h × 70px */ }
+
+/* Sticky time axis */
+.pl-time-axis {
+  width: 56px; flex-shrink: 0;
+  position: sticky; left: 0; z-index: 5;
+  background: var(--bg);
+  border-right: 1px solid var(--border);
+  height: 840px; position: relative;
+}
+.pl-hour-label {
+  position: absolute; left: 0; right: 8px;
+  font-size: 9.5px; font-weight: 700; color: var(--light);
+  text-align: right; transform: translateY(-50%);
+  white-space: nowrap; pointer-events: none;
+}
+
+/* Staff columns wrapper */
+.pl-cols { flex: 1; display: flex; position: relative; height: 840px; }
+
+/* Hour + half-hour lines (drawn in each column) */
+.pl-staff-col {
+  flex: 1; min-width: 150px;
+  position: relative;
+  border-right: 1px solid var(--border);
+}
+.pl-h-line {
+  position: absolute; left: 0; right: 0;
+  pointer-events: none;
+}
+.pl-h-line.full  { height: 1px; background: var(--border); }
+.pl-h-line.half  { height: 0; border-top: 1px dashed var(--border); opacity: .55; }
+
+/* Now bar */
+.pl-now-bar {
+  position: absolute; left: 0; right: 0; z-index: 6;
+  height: 2px; background: var(--p);
+  box-shadow: 0 0 6px var(--pglow);
+  pointer-events: none;
+}
+.pl-now-dot {
+  position: absolute; left: -4px; top: -4px;
+  width: 10px; height: 10px; border-radius: 50%;
+  background: var(--p); box-shadow: 0 0 8px var(--pglow);
+}
+.pl-now-time {
+  position: absolute; right: 6px; top: -9px;
+  font-size: 9.5px; font-weight: 800; color: var(--p);
+  background: var(--gold-s); border: 1px solid rgba(168,129,10,.25);
+  padding: 1px 6px; border-radius: 20px; white-space: nowrap;
+}
+
+/* Appointment card */
+.pl-appt {
+  position: absolute; left: 5px; right: 5px;
+  border-radius: 9px; padding: 6px 9px;
+  overflow: hidden; cursor: pointer;
+  border-left: 3px solid transparent;
+  transition: box-shadow .15s, z-index 0s;
+}
+.pl-appt:hover { box-shadow: 0 4px 16px rgba(0,0,0,.13); z-index: 4; }
+.pl-appt-time {
+  font-size: 9.5px; font-weight: 700; opacity: .75;
+  white-space: nowrap; overflow: hidden;
+}
+.pl-appt-client {
+  font-size: 11.5px; font-weight: 700; margin-top: 2px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.pl-appt-svc {
+  font-size: 10px; opacity: .72; margin-top: 1px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+/* Card color variants */
+.pl-a-inprogress { background: rgba(168,129,10,.13); border-left-color: var(--p); color: var(--p); }
+.pl-a-planned    { background: var(--blue-s);  border-left-color: var(--blue);   color: var(--blue); }
+.pl-a-confirmed  { background: var(--green-s); border-left-color: var(--green);  color: var(--green); }
+.pl-a-done       { background: rgba(0,0,0,.05); border-left-color: var(--light); color: var(--muted); opacity: .7; }
+.pl-a-noshow     { background: var(--red-s);   border-left-color: var(--red);    color: var(--red); opacity: .65; }
+
+/* Absent stripe */
+.pl-staff-col.absent-col {
+  background: repeating-linear-gradient(
+    -45deg,
+    transparent, transparent 10px,
+    rgba(0,0,0,.02) 10px, rgba(0,0,0,.02) 11px
+  );
+}
+
+/* ── Sub-nav planning (Jour / Semaine / Mois) ── */
+.pl-sub-nav {
+  display: flex; align-items: center; gap: 4px;
+  padding: 9px 14px;
+  background: var(--s1);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.pl-sub-btn {
+  padding: 5px 15px;
+  border: 1px solid var(--border2);
+  background: transparent;
+  border-radius: 20px;
+  font-size: 12px; font-weight: 600;
+  color: var(--muted); cursor: pointer;
+  transition: all .15s;
+}
+.pl-sub-btn:hover { background: var(--s2); }
+.pl-sub-btn.active { background: var(--p); color: #fff; border-color: var(--p); }
+.pl-date-nav { display: flex; align-items: center; gap: 6px; margin-left: auto; }
+.pl-nav-btn {
+  width: 28px; height: 28px;
+  border: 1px solid var(--border2); background: transparent;
+  border-radius: 7px; cursor: pointer; font-size: 15px;
+  color: var(--text); display: flex; align-items: center; justify-content: center;
+  transition: background .12s;
+}
+.pl-nav-btn:hover { background: var(--s2); }
+.pl-nav-label { font-size: 13px; font-weight: 700; color: var(--text); min-width: 170px; text-align: center; }
+.pl-nav-today {
+  padding: 4px 11px;
+  border: 1px solid var(--border2); background: transparent;
+  border-radius: 7px; font-size: 11px; font-weight: 600;
+  color: var(--muted); cursor: pointer; transition: background .12s;
+}
+.pl-nav-today:hover { background: var(--s2); }
+
+/* ── Semaine view ── */
+.wk-outer { flex: 1; overflow: auto; }
+.wk-inner { min-width: 780px; position: relative; }
+.wk-header {
+  display: flex; position: sticky; top: 0; z-index: 10;
+  background: var(--s1); border-bottom: 2px solid var(--border2);
+}
+.wk-corner { width: 50px; flex-shrink: 0; position: sticky; left: 0; z-index: 12; background: var(--s1); border-right: 1px solid var(--border); }
+.wk-day-hd {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; padding: 8px 4px;
+  border-right: 1px solid var(--border);
+  cursor: default;
+}
+.wk-day-label { font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; }
+.wk-day-num {
+  font-size: 16px; font-weight: 800; color: var(--text);
+  width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;
+  border-radius: 50%; margin-top: 2px;
+}
+.wk-day-hd.today .wk-day-num { background: var(--p); color: #fff; }
+.wk-day-hd.weekend .wk-day-label { color: var(--red); opacity: .6; }
+.wk-body { display: flex; height: 840px; }
+.wk-time-axis {
+  width: 50px; flex-shrink: 0;
+  position: sticky; left: 0; z-index: 5;
+  background: var(--s1); border-right: 1px solid var(--border);
+  height: 840px; position: relative;
+}
+.wk-hour-label {
+  position: absolute; right: 7px; font-size: 9.5px;
+  font-weight: 700; color: var(--light); transform: translateY(-50%);
+  white-space: nowrap;
+}
+.wk-cols { flex: 1; display: flex; position: relative; height: 840px; }
+.wk-day-col {
+  flex: 1; position: relative; border-right: 1px solid var(--border);
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent 0, transparent 34px,
+    rgba(160,130,40,.05) 34px, rgba(160,130,40,.05) 35px,
+    transparent 35px, transparent 69px,
+    rgba(160,130,40,.12) 69px, rgba(160,130,40,.12) 70px
+  );
+  background-size: 100% 70px;
+}
+.wk-day-col.today-col { background-color: rgba(168,129,10,.04); }
+.wk-day-col.closed-col {
+  background: repeating-linear-gradient(-45deg, transparent, transparent 10px, rgba(0,0,0,.02) 10px, rgba(0,0,0,.02) 11px);
+}
+.wk-closed-lbl {
+  position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
+  font-size: 10px; font-weight: 700; color: var(--muted); opacity: .6;
+  text-align: center; pointer-events: none; white-space: nowrap;
+}
+
+/* ── Mois view ── */
+.mo-outer { flex: 1; overflow: auto; padding: 14px 16px; }
+.mo-nav-label { font-size: 15px; font-weight: 800; color: var(--text); margin-bottom: 12px; }
+.mo-day-names {
+  display: grid; grid-template-columns: repeat(7,1fr); gap: 1px; margin-bottom: 4px;
+}
+.mo-day-name {
+  text-align: center; font-size: 10.5px; font-weight: 700;
+  color: var(--muted); text-transform: uppercase; letter-spacing: .5px; padding: 4px 0 8px;
+}
+.mo-day-name.weekend { color: rgba(220,38,38,.5); }
+.mo-grid {
+  display: grid; grid-template-columns: repeat(7,1fr);
+  gap: 1px; background: var(--border);
+  border: 1px solid var(--border); border-radius: 10px; overflow: hidden;
+}
+.mo-cell {
+  background: var(--s1); min-height: 88px; padding: 6px 7px;
+  cursor: default; transition: background .12s;
+}
+.mo-cell:hover { background: var(--s2); }
+.mo-cell.other-month { background: var(--bg); }
+.mo-cell.other-month .mo-cell-num { color: rgba(28,26,16,.25); }
+.mo-cell.today-cell { background: rgba(168,129,10,.06); }
+.mo-cell-num {
+  font-size: 12px; font-weight: 700; color: var(--muted);
+  width: 22px; height: 22px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: 4px;
+}
+.mo-cell.today-cell .mo-cell-num { background: var(--p); color: #fff; font-weight: 800; }
+.mo-cell.weekend-cell .mo-cell-num { color: rgba(220,38,38,.45); }
+.mo-chip {
+  font-size: 10px; font-weight: 600; padding: 2px 6px;
+  border-radius: 4px; margin-bottom: 2px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  cursor: pointer; display: block; transition: opacity .1s;
+}
+.mo-chip:hover { opacity: .8; }
+.mo-chip.gold  { background: rgba(168,129,10,.13); color: var(--p); }
+.mo-chip.blue  { background: var(--blue-s);  color: var(--blue); }
+.mo-chip.green { background: var(--green-s); color: var(--green); }
+.mo-chip.red   { background: var(--red-s);   color: var(--red); }
+.mo-chip.gray  { background: rgba(0,0,0,.05); color: var(--muted); opacity: .75; }
+.mo-more { font-size: 10px; color: var(--muted); font-weight: 600; cursor: pointer; padding: 1px 4px; }
+.mo-more:hover { color: var(--p); }
+
+/* ─── TOOLTIP de statut ─── */
+.source-wa {
+  background: rgba(21,128,61,.12); color: var(--green);
+  border-radius: 7px; padding: 3px 6px;
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 10.5px; font-weight: 700;
+}
+</style>
+</head>
+<body>
+
+<!-- ── TOPBAR ── -->
+<div class="topbar">
+  <div class="topbar-left">
+    <div class="topbar-title">
+      <div class="tb-dot"></div>
+      Agenda
+    </div>
+    <div class="topbar-sub">Lundi 19 mai 2026</div>
+  </div>
+
+  <div class="topbar-stats">
+    <div class="stat-chip c-muted"><span class="n">24</span>&nbsp;RDV</div>
+    <div class="stat-chip c-blue"><span class="n">8</span>&nbsp;Planifiés</div>
+    <div class="stat-chip c-green"><span class="n">14</span>&nbsp;Terminés</div>
+    <div class="stat-chip c-gold"><span class="n">2</span>&nbsp;En cours</div>
+    <div class="stat-chip c-rev"><span class="n">3 840</span>&nbsp;MAD</div>
+  </div>
+
+  <div class="topbar-right">
+    <div class="view-toggle">
+      <button class="vt-btn active" onclick="setView('list',this)">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+        Liste
+      </button>
+      <button class="vt-btn" onclick="setView('planning',this)">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        Planning
+      </button>
+    </div>
+    <button class="btn-primary" onclick="openModal('modal-rdv')">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Nouveau RDV
+    </button>
+  </div>
+</div>
+
+<!-- ── FILTER BAR ── -->
+<div class="filter-bar">
+  <!-- Search -->
+  <div class="filter-input" style="flex:1;max-width:260px">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    <input type="text" placeholder="Rechercher un client…" />
+  </div>
+
+  <!-- Date -->
+  <div class="filter-select has-value" onclick="this.classList.toggle('has-value')">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+    19 mai 2026
+    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+  </div>
+
+  <!-- Statut -->
+  <div class="filter-select" onclick="this.classList.toggle('has-value')">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+    Statut
+    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+  </div>
+
+  <!-- Source -->
+  <div class="filter-select" onclick="this.classList.toggle('has-value')">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+    Source
+    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+  </div>
+
+  <!-- Staff -->
+  <div class="filter-select" onclick="this.classList.toggle('has-value')">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="7" r="4"/><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/></svg>
+    Collaborateur
+    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+  </div>
+
+  <div class="filter-sep"></div>
+  <button class="filter-clear">Réinitialiser</button>
+</div>
+
+<!-- ── MAIN ── -->
+<div class="main" style="position:relative">
+<div id="view-list" style="display:flex;flex-direction:column;flex:1;overflow:hidden">
+
+  <!-- Table header -->
+  <div class="table-header">
+    <div class="table-count">
+      <strong>24</strong> rendez-vous &nbsp;·&nbsp; filtre actif : aujourd'hui
+    </div>
+    <div class="table-opts">
+      <button class="opt-btn">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+        Masquer terminés
+      </button>
+      <button class="opt-btn">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Exporter
+      </button>
+    </div>
+  </div>
+
+  <!-- Table -->
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Heure</th>
+          <th>Client</th>
+          <th>Prestation(s)</th>
+          <th>Collaborateur</th>
+          <th>Statut</th>
+          <th>Source</th>
+          <th style="text-align:right">Prix</th>
+          <th style="text-align:right"></th>
+        </tr>
+      </thead>
+      <tbody>
+
+        <!-- NOW BAR -->
+        <tr class="now-row" style="cursor:default">
+          <td colspan="8">
+            <div class="now-bar-line">
+              <div class="now-line"></div>
+              <span class="now-label">Maintenant · 14:43</span>
+              <div class="now-line"></div>
+            </div>
+          </td>
+        </tr>
+
+        <!-- Ligne 1 — En cours, WhatsApp -->
+        <tr onclick="selectRow(this)">
+          <td class="td-time">
+            14:00
+            <div class="td-time-date">→ 15:30</div>
+          </td>
+          <td>
+            <div class="td-client">
+              <div class="td-av av0">F</div>
+              <div class="td-client-info">
+                <div class="td-name">Fatima Zahra Alaoui</div>
+                <div class="td-phone">06 61 23 45 67</div>
+              </div>
+            </div>
+          </td>
+          <td class="td-svc">
+            <div class="td-svc-name">Mèches complètes</div>
+            <div class="td-svc-more">90 min</div>
+          </td>
+          <td class="td-staff">
+            <div class="td-staff-dot" style="background:var(--p)"></div>
+            <div class="td-staff-name">Hicham</div>
+          </td>
+          <td><span class="badge b-inprogress"><span class="badge-dot" style="background:var(--gold)"></span>En cours</span></td>
+          <td><span class="badge b-whatsapp">WhatsApp</span></td>
+          <td class="td-price">350<small>MAD</small></td>
+          <td class="td-actions">
+            <button class="actions-btn" onclick="toggleDropdown(event,this)">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>
+            </button>
+            <div class="dropdown">
+              <div class="dd-item" onclick="openModal('modal-rdv')">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                Modifier
+              </div>
+              <div class="dd-item">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                Marquer terminé
+              </div>
+              <div class="dd-sep"></div>
+              <div class="dd-item danger">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+                Annuler
+              </div>
+            </div>
+          </td>
+        </tr>
+
+        <!-- Ligne 2 — Planifié, Online -->
+        <tr onclick="selectRow(this)">
+          <td class="td-time">
+            15:00
+            <div class="td-time-date">→ 16:00</div>
+          </td>
+          <td>
+            <div class="td-client">
+              <div class="td-av av1">L</div>
+              <div class="td-client-info">
+                <div class="td-name">Leila Benhay</div>
+                <div class="td-phone">06 77 89 01 23</div>
+              </div>
+            </div>
+          </td>
+          <td class="td-svc">
+            <div class="td-svc-name">Coupe femme</div>
+            <div class="td-svc-more">+ Brushing · 60 min</div>
+          </td>
+          <td class="td-staff">
+            <div class="td-staff-dot" style="background:var(--green)"></div>
+            <div class="td-staff-name">Rachida</div>
+          </td>
+          <td><span class="badge b-scheduled"><span class="badge-dot" style="background:var(--blue)"></span>Planifié</span></td>
+          <td><span class="badge b-online">En ligne</span></td>
+          <td class="td-price">200<small>MAD</small></td>
+          <td class="td-actions">
+            <button class="actions-btn" onclick="toggleDropdown(event,this)">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>
+            </button>
+            <div class="dropdown">
+              <div class="dd-item" onclick="openModal('modal-rdv')">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                Modifier
+              </div>
+              <div class="dd-item">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                Client arrivé
+              </div>
+              <div class="dd-sep"></div>
+              <div class="dd-item danger">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M8 15s1.5-2 4-2 4 2 4 2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
+                No-show
+              </div>
+              <div class="dd-item danger">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+                Annuler
+              </div>
+            </div>
+          </td>
+        </tr>
+
+        <!-- Ligne 3 — Planifié, Téléphone -->
+        <tr onclick="selectRow(this)">
+          <td class="td-time">
+            15:30
+            <div class="td-time-date">→ 16:30</div>
+          </td>
+          <td>
+            <div class="td-client">
+              <div class="td-av av2">N</div>
+              <div class="td-client-info">
+                <div class="td-name">Nadia Alami</div>
+                <div class="td-phone">06 54 32 10 98</div>
+              </div>
+            </div>
+          </td>
+          <td class="td-svc">
+            <div class="td-svc-name">Pose gel mains</div>
+            <div class="td-svc-more">60 min</div>
+          </td>
+          <td class="td-staff" style="color:var(--light);font-style:italic">
+            <div class="td-staff-dot" style="background:var(--light)"></div>
+            <div class="td-staff-name" style="color:var(--light)">Non assigné</div>
+          </td>
+          <td><span class="badge b-scheduled"><span class="badge-dot" style="background:var(--blue)"></span>Planifié</span></td>
+          <td><span class="badge b-phone">Téléphone</span></td>
+          <td class="td-price">180<small>MAD</small></td>
+          <td class="td-actions">
+            <button class="actions-btn" onclick="toggleDropdown(event,this)">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>
+            </button>
+            <div class="dropdown">
+              <div class="dd-item" onclick="openModal('modal-rdv')">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                Modifier
+              </div>
+              <div class="dd-sep"></div>
+              <div class="dd-item danger">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+                Annuler
+              </div>
+            </div>
+          </td>
+        </tr>
+
+        <!-- Ligne 4 — Sans RDV, En cours -->
+        <tr onclick="selectRow(this)">
+          <td class="td-time">
+            14:30
+            <div class="td-time-date">→ 15:10</div>
+          </td>
+          <td>
+            <div class="td-client">
+              <div class="td-av av3">S</div>
+              <div class="td-client-info">
+                <div class="td-name">Salma Tazi</div>
+                <div class="td-phone">—</div>
+              </div>
+            </div>
+          </td>
+          <td class="td-svc">
+            <div class="td-svc-name">Pédicure simple</div>
+            <div class="td-svc-more">40 min</div>
+          </td>
+          <td class="td-staff">
+            <div class="td-staff-dot" style="background:var(--p)"></div>
+            <div class="td-staff-name">Salma</div>
+          </td>
+          <td><span class="badge b-inprogress"><span class="badge-dot" style="background:var(--gold)"></span>En cours</span></td>
+          <td><span class="badge b-walkin">Sans RDV</span></td>
+          <td class="td-price">90<small>MAD</small></td>
+          <td class="td-actions">
+            <button class="actions-btn" onclick="toggleDropdown(event,this)">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>
+            </button>
+            <div class="dropdown">
+              <div class="dd-item">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                Terminer
+              </div>
+              <div class="dd-sep"></div>
+              <div class="dd-item danger">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg>
+                Supprimer
+              </div>
+            </div>
+          </td>
+        </tr>
+
+        <!-- Ligne 5 — Terminé -->
+        <tr onclick="selectRow(this)" style="opacity:.6">
+          <td class="td-time">
+            13:00
+            <div class="td-time-date">→ 13:45</div>
+          </td>
+          <td>
+            <div class="td-client">
+              <div class="td-av av0">K</div>
+              <div class="td-client-info">
+                <div class="td-name">Khadija Moussaoui</div>
+                <div class="td-phone">06 98 76 54 32</div>
+              </div>
+            </div>
+          </td>
+          <td class="td-svc">
+            <div class="td-svc-name">Brushing</div>
+            <div class="td-svc-more">45 min</div>
+          </td>
+          <td class="td-staff">
+            <div class="td-staff-dot" style="background:var(--green)"></div>
+            <div class="td-staff-name">Ahlam</div>
+          </td>
+          <td><span class="badge b-completed">Terminé</span></td>
+          <td><span class="badge b-salon">Salon</span></td>
+          <td class="td-price">150<small>MAD</small></td>
+          <td class="td-actions">
+            <button class="actions-btn" onclick="toggleDropdown(event,this)">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>
+            </button>
+            <div class="dropdown">
+              <div class="dd-item danger">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg>
+                Supprimer
+              </div>
+            </div>
+          </td>
+        </tr>
+
+        <!-- Ligne 6 — No-show -->
+        <tr onclick="selectRow(this)" style="opacity:.55">
+          <td class="td-time">
+            12:30
+            <div class="td-time-date">→ 14:30</div>
+          </td>
+          <td>
+            <div class="td-client">
+              <div class="td-av av2">H</div>
+              <div class="td-client-info">
+                <div class="td-name">Hanae Berrada</div>
+                <div class="td-phone">06 11 22 33 44</div>
+              </div>
+            </div>
+          </td>
+          <td class="td-svc">
+            <div class="td-svc-name">Balayage</div>
+            <div class="td-svc-more">120 min</div>
+          </td>
+          <td class="td-staff">
+            <div class="td-staff-dot" style="background:var(--muted)"></div>
+            <div class="td-staff-name">Azhaar</div>
+          </td>
+          <td><span class="badge b-noshow"><span class="badge-dot" style="background:var(--red)"></span>No-show</span></td>
+          <td><span class="badge b-whatsapp">WhatsApp</span></td>
+          <td class="td-price">400<small>MAD</small></td>
+          <td class="td-actions">
+            <button class="actions-btn" onclick="toggleDropdown(event,this)">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>
+            </button>
+            <div class="dropdown">
+              <div class="dd-item danger">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg>
+                Supprimer
+              </div>
+            </div>
+          </td>
+        </tr>
+
+      </tbody>
+    </table>
+  </div>
+</div><!-- /view-list -->
+
+<!-- ── PLANNING VIEW ── -->
+<div class="planning-view" id="view-planning" style="display:none">
+
+  <!-- Sub-navigation Jour / Semaine / Mois -->
+  <div class="pl-sub-nav">
+    <button class="pl-sub-btn active" onclick="setPlanView('jour',this)">Jour</button>
+    <button class="pl-sub-btn" onclick="setPlanView('semaine',this)">Semaine</button>
+    <button class="pl-sub-btn" onclick="setPlanView('mois',this)">Mois</button>
+    <div class="pl-date-nav">
+      <button class="pl-nav-btn">&#8249;</button>
+      <span class="pl-nav-label" id="pl-nav-label">Mardi 19 mai 2026</span>
+      <button class="pl-nav-btn">&#8250;</button>
+      <button class="pl-nav-today">Aujourd'hui</button>
+    </div>
+  </div>
+
+  <!-- ── VUE JOUR ── -->
+  <div id="pl-jour" class="pl-outer">
+    <div class="pl-inner">
+
+      <!-- Staff header (sticky top) -->
+      <div class="pl-header">
+        <div class="pl-corner"></div>
+
+        <div class="pl-col-hd">
+          <div class="td-av av0" style="width:30px;height:30px;font-size:12px;flex-shrink:0">A</div>
+          <div class="pl-hd-info">
+            <div class="pl-hd-name">Ahlam</div>
+            <div class="pl-hd-status free">Libre</div>
+          </div>
+          <div style="width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 5px rgba(21,128,61,.4);flex-shrink:0"></div>
+        </div>
+
+        <div class="pl-col-hd">
+          <div class="td-av av1" style="width:30px;height:30px;font-size:12px;flex-shrink:0">H</div>
+          <div class="pl-hd-info">
+            <div class="pl-hd-name">Hicham</div>
+            <div class="pl-hd-status busy">En cours</div>
+          </div>
+          <div style="width:8px;height:8px;border-radius:50%;background:var(--p);box-shadow:0 0 5px var(--pglow);flex-shrink:0"></div>
+        </div>
+
+        <div class="pl-col-hd">
+          <div class="td-av av2" style="width:30px;height:30px;font-size:12px;flex-shrink:0">R</div>
+          <div class="pl-hd-info">
+            <div class="pl-hd-name">Rachida</div>
+            <div class="pl-hd-status free">Libre</div>
+          </div>
+          <div style="width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 5px rgba(21,128,61,.4);flex-shrink:0"></div>
+        </div>
+
+        <div class="pl-col-hd">
+          <div class="td-av av3" style="width:30px;height:30px;font-size:12px;flex-shrink:0">K</div>
+          <div class="pl-hd-info">
+            <div class="pl-hd-name">Khadija</div>
+            <div class="pl-hd-status loaded">Chargée</div>
+          </div>
+          <div style="width:8px;height:8px;border-radius:50%;background:var(--gold);box-shadow:0 0 5px rgba(168,129,10,.4);flex-shrink:0"></div>
+        </div>
+
+        <div class="pl-col-hd">
+          <div class="td-av av0" style="width:30px;height:30px;font-size:12px;flex-shrink:0">Az</div>
+          <div class="pl-hd-info">
+            <div class="pl-hd-name">Azhaar</div>
+            <div class="pl-hd-status free">Libre</div>
+          </div>
+          <div style="width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 5px rgba(21,128,61,.4);flex-shrink:0"></div>
+        </div>
+
+        <div class="pl-col-hd">
+          <div class="td-av av2" style="width:30px;height:30px;font-size:12px;flex-shrink:0">S</div>
+          <div class="pl-hd-info">
+            <div class="pl-hd-name">Salma</div>
+            <div class="pl-hd-status busy">En cours</div>
+          </div>
+          <div style="width:8px;height:8px;border-radius:50%;background:var(--p);box-shadow:0 0 5px var(--pglow);flex-shrink:0"></div>
+        </div>
+
+        <div class="pl-col-hd absent">
+          <div class="td-av av1" style="width:30px;height:30px;font-size:12px;flex-shrink:0;opacity:.5">M</div>
+          <div class="pl-hd-info">
+            <div class="pl-hd-name">Marouane</div>
+            <div class="pl-hd-status absent">Congé</div>
+          </div>
+          <div style="width:8px;height:8px;border-radius:50%;background:var(--light);flex-shrink:0"></div>
+        </div>
+      </div><!-- /pl-header -->
+
+      <!-- Grid body -->
+      <div class="pl-body">
+
+        <!-- Time axis (sticky left) -->
+        <div class="pl-time-axis">
+          <div class="pl-hour-label" style="top:0px">08:00</div>
+          <div class="pl-hour-label" style="top:70px">09:00</div>
+          <div class="pl-hour-label" style="top:140px">10:00</div>
+          <div class="pl-hour-label" style="top:210px">11:00</div>
+          <div class="pl-hour-label" style="top:280px">12:00</div>
+          <div class="pl-hour-label" style="top:350px">13:00</div>
+          <div class="pl-hour-label" style="top:420px">14:00</div>
+          <div class="pl-hour-label" style="top:490px">15:00</div>
+          <div class="pl-hour-label" style="top:560px">16:00</div>
+          <div class="pl-hour-label" style="top:630px">17:00</div>
+          <div class="pl-hour-label" style="top:700px">18:00</div>
+          <div class="pl-hour-label" style="top:770px">19:00</div>
+          <div class="pl-hour-label" style="top:840px">20:00</div>
+        </div>
+
+        <!-- Staff columns -->
+        <div class="pl-cols">
+
+          <!-- Now bar at 14:43 → (6*70)+(43/60*70) = 470px -->
+          <div class="pl-now-bar" style="top:470px">
+            <div class="pl-now-dot"></div>
+            <span class="pl-now-time">14:43</span>
+          </div>
+
+          <!-- COL 1 — Ahlam -->
+          <div class="pl-staff-col" style="background-image:repeating-linear-gradient(to bottom,transparent 0,transparent 34px,rgba(160,130,40,.06) 34px,rgba(160,130,40,.06) 35px,transparent 35px,transparent 69px,rgba(160,130,40,.14) 69px,rgba(160,130,40,.14) 70px);background-size:100% 70px">
+            <!-- 13:00–13:45 Brushing (done) top=350 h=53 -->
+            <div class="pl-appt pl-a-done" style="top:350px;height:53px" onclick="openModal('modal-rdv')">
+              <div class="pl-appt-time">13:00 – 13:45</div>
+              <div class="pl-appt-client">Khadija M.</div>
+              <div class="pl-appt-svc">Brushing</div>
+            </div>
+            <!-- 16:00–16:45 Coupe femme (planned) top=560 h=53 -->
+            <div class="pl-appt pl-a-planned" style="top:560px;height:53px" onclick="openModal('modal-rdv')">
+              <div class="pl-appt-time">16:00 – 16:45</div>
+              <div class="pl-appt-client">Sara M.</div>
+              <div class="pl-appt-svc">Coupe femme</div>
+            </div>
+          </div>
+
+          <!-- COL 2 — Hicham -->
+          <div class="pl-staff-col" style="background-image:repeating-linear-gradient(to bottom,transparent 0,transparent 34px,rgba(160,130,40,.06) 34px,rgba(160,130,40,.06) 35px,transparent 35px,transparent 69px,rgba(160,130,40,.14) 69px,rgba(160,130,40,.14) 70px);background-size:100% 70px">
+            <!-- 14:00–15:30 Mèches (in_progress) top=420 h=105 -->
+            <div class="pl-appt pl-a-inprogress" style="top:420px;height:105px" onclick="openModal('modal-rdv')">
+              <div class="pl-appt-time">14:00 – 15:30</div>
+              <div class="pl-appt-client">Fatima Z. Alaoui</div>
+              <div class="pl-appt-svc">Mèches complètes</div>
+            </div>
+            <!-- 16:30–17:00 Coupe enfant (planned) top=595 h=35 -->
+            <div class="pl-appt pl-a-planned" style="top:595px;height:35px" onclick="openModal('modal-rdv')">
+              <div class="pl-appt-time">16:30 – 17:00</div>
+              <div class="pl-appt-client">Amina M.</div>
+            </div>
+          </div>
+
+          <!-- COL 3 — Rachida -->
+          <div class="pl-staff-col" style="background-image:repeating-linear-gradient(to bottom,transparent 0,transparent 34px,rgba(160,130,40,.06) 34px,rgba(160,130,40,.06) 35px,transparent 35px,transparent 69px,rgba(160,130,40,.14) 69px,rgba(160,130,40,.14) 70px);background-size:100% 70px">
+            <!-- 11:00–12:00 Balayage racines (done) top=210 h=70 -->
+            <div class="pl-appt pl-a-done" style="top:210px;height:70px" onclick="openModal('modal-rdv')">
+              <div class="pl-appt-time">11:00 – 12:00</div>
+              <div class="pl-appt-client">Nadia A.</div>
+              <div class="pl-appt-svc">Balayage racines</div>
+            </div>
+            <!-- 15:00–16:00 Coupe+Brushing (planned) top=490 h=70 -->
+            <div class="pl-appt pl-a-planned" style="top:490px;height:70px" onclick="openModal('modal-rdv')">
+              <div class="pl-appt-time">15:00 – 16:00</div>
+              <div class="pl-appt-client">Leila B.</div>
+              <div class="pl-appt-svc">Coupe + Brushing</div>
+            </div>
+          </div>
+
+          <!-- COL 4 — Khadija -->
+          <div class="pl-staff-col" style="background-image:repeating-linear-gradient(to bottom,transparent 0,transparent 34px,rgba(160,130,40,.06) 34px,rgba(160,130,40,.06) 35px,transparent 35px,transparent 69px,rgba(160,130,40,.14) 69px,rgba(160,130,40,.14) 70px);background-size:100% 70px">
+            <!-- 10:30–11:00 Manucure (done) top=175 h=35 -->
+            <div class="pl-appt pl-a-done" style="top:175px;height:35px" onclick="openModal('modal-rdv')">
+              <div class="pl-appt-time">10:30 – 11:00</div>
+              <div class="pl-appt-client">Siham B.</div>
+            </div>
+            <!-- 13:30–14:30 Pose gel (in_progress) top=385 h=70 -->
+            <div class="pl-appt pl-a-inprogress" style="top:385px;height:70px" onclick="openModal('modal-rdv')">
+              <div class="pl-appt-time">13:30 – 14:30</div>
+              <div class="pl-appt-client">Yousra T.</div>
+              <div class="pl-appt-svc">Pose gel mains</div>
+            </div>
+          </div>
+
+          <!-- COL 5 — Azhaar -->
+          <div class="pl-staff-col" style="background-image:repeating-linear-gradient(to bottom,transparent 0,transparent 34px,rgba(160,130,40,.06) 34px,rgba(160,130,40,.06) 35px,transparent 35px,transparent 69px,rgba(160,130,40,.14) 69px,rgba(160,130,40,.14) 70px);background-size:100% 70px">
+            <!-- 12:30–14:30 Balayage (noshow) top=315 h=140 -->
+            <div class="pl-appt pl-a-noshow" style="top:315px;height:140px" onclick="openModal('modal-rdv')">
+              <div class="pl-appt-time">12:30 – 14:30</div>
+              <div class="pl-appt-client">Hanae B.</div>
+              <div class="pl-appt-svc">Balayage · No-show</div>
+            </div>
+            <!-- 16:00–17:00 Mèches légères (planned) top=560 h=70 -->
+            <div class="pl-appt pl-a-planned" style="top:560px;height:70px" onclick="openModal('modal-rdv')">
+              <div class="pl-appt-time">16:00 – 17:00</div>
+              <div class="pl-appt-client">Ilham R.</div>
+              <div class="pl-appt-svc">Mèches légères</div>
+            </div>
+          </div>
+
+          <!-- COL 6 — Salma -->
+          <div class="pl-staff-col" style="background-image:repeating-linear-gradient(to bottom,transparent 0,transparent 34px,rgba(160,130,40,.06) 34px,rgba(160,130,40,.06) 35px,transparent 35px,transparent 69px,rgba(160,130,40,.14) 69px,rgba(160,130,40,.14) 70px);background-size:100% 70px">
+            <!-- 09:00–09:45 Coupe+soin (done) top=70 h=53 -->
+            <div class="pl-appt pl-a-done" style="top:70px;height:53px" onclick="openModal('modal-rdv')">
+              <div class="pl-appt-time">09:00 – 09:45</div>
+              <div class="pl-appt-client">Lamia K.</div>
+              <div class="pl-appt-svc">Coupe + Soin</div>
+            </div>
+            <!-- 14:30–15:10 Pédicure (in_progress) top=455 h=47 -->
+            <div class="pl-appt pl-a-inprogress" style="top:455px;height:47px" onclick="openModal('modal-rdv')">
+              <div class="pl-appt-time">14:30 – 15:10</div>
+              <div class="pl-appt-client">Salma T.</div>
+              <div class="pl-appt-svc">Pédicure simple</div>
+            </div>
+          </div>
+
+          <!-- COL 7 — Marouane (absent) -->
+          <div class="pl-staff-col absent-col" style="background-image:repeating-linear-gradient(to bottom,transparent 0,transparent 69px,rgba(160,130,40,.08) 69px,rgba(160,130,40,.08) 70px);background-size:100% 70px">
+          </div>
+
+        </div><!-- /pl-cols -->
+      </div><!-- /pl-body -->
+    </div><!-- /pl-inner -->
+  </div><!-- /pl-jour -->
+
+  <!-- ── VUE SEMAINE ── -->
+  <div id="pl-semaine" class="wk-outer" style="display:none">
+    <div class="wk-inner">
+
+      <!-- Day headers -->
+      <div class="wk-header">
+        <div class="wk-corner"></div>
+        <div class="wk-day-hd"><span class="wk-day-label">Lun</span><span class="wk-day-num">18</span></div>
+        <div class="wk-day-hd today"><span class="wk-day-label">Mar</span><span class="wk-day-num">19</span></div>
+        <div class="wk-day-hd"><span class="wk-day-label">Mer</span><span class="wk-day-num">20</span></div>
+        <div class="wk-day-hd"><span class="wk-day-label">Jeu</span><span class="wk-day-num">21</span></div>
+        <div class="wk-day-hd"><span class="wk-day-label">Ven</span><span class="wk-day-num">22</span></div>
+        <div class="wk-day-hd weekend"><span class="wk-day-label">Sam</span><span class="wk-day-num">23</span></div>
+        <div class="wk-day-hd weekend"><span class="wk-day-label">Dim</span><span class="wk-day-num">24</span></div>
+      </div>
+
+      <!-- Grid body -->
+      <div class="wk-body">
+        <!-- Time axis -->
+        <div class="wk-time-axis">
+          <div class="wk-hour-label" style="top:0px">08:00</div>
+          <div class="wk-hour-label" style="top:70px">09:00</div>
+          <div class="wk-hour-label" style="top:140px">10:00</div>
+          <div class="wk-hour-label" style="top:210px">11:00</div>
+          <div class="wk-hour-label" style="top:280px">12:00</div>
+          <div class="wk-hour-label" style="top:350px">13:00</div>
+          <div class="wk-hour-label" style="top:420px">14:00</div>
+          <div class="wk-hour-label" style="top:490px">15:00</div>
+          <div class="wk-hour-label" style="top:560px">16:00</div>
+          <div class="wk-hour-label" style="top:630px">17:00</div>
+          <div class="wk-hour-label" style="top:700px">18:00</div>
+          <div class="wk-hour-label" style="top:770px">19:00</div>
+          <div class="wk-hour-label" style="top:840px">20:00</div>
+        </div>
+        <!-- Day columns -->
+        <div class="wk-cols">
+          <!-- Now bar at 14:43 → 470px -->
+          <div class="pl-now-bar" style="top:470px"><div class="pl-now-dot"></div><span class="pl-now-time">14:43</span></div>
+
+          <!-- Lun 18 -->
+          <div class="wk-day-col">
+            <div class="pl-appt pl-a-planned" style="top:140px;height:53px" onclick="openModal('modal-rdv')">
+              <div class="pl-appt-time">10:00 – 10:45</div>
+              <div class="pl-appt-client">Nadia A.</div>
+              <div class="pl-appt-svc">Coupe femme</div>
+            </div>
+            <div class="pl-appt pl-a-inprogress" style="top:525px;height:105px" onclick="openModal('modal-rdv')">
+              <div class="pl-appt-time">15:30 – 17:00</div>
+              <div class="pl-appt-client">Fatima Z.</div>
+              <div class="pl-appt-svc">Mèches complètes</div>
+            </div>
+          </div>
+
+          <!-- Mar 19 (today) -->
+          <div class="wk-day-col today-col">
+            <div class="pl-appt pl-a-done" style="top:70px;height:53px" onclick="openModal('modal-rdv')">
+              <div class="pl-appt-time">09:00 – 09:45</div>
+              <div class="pl-appt-client">Lamia K.</div>
+              <div class="pl-appt-svc">Coupe + Soin</div>
+            </div>
+            <div class="pl-appt pl-a-done" style="top:210px;height:70px" onclick="openModal('modal-rdv')">
+              <div class="pl-appt-time">11:00 – 12:00</div>
+              <div class="pl-appt-client">Nadia A.</div>
+              <div class="pl-appt-svc">Balayage racines</div>
+            </div>
+            <div class="pl-appt pl-a-inprogress" style="top:420px;height:105px" onclick="openModal('modal-rdv')">
+              <div class="pl-appt-time">14:00 – 15:30</div>
+              <div class="pl-appt-client">Fatima Z. Alaoui</div>
+              <div class="pl-appt-svc">Mèches complètes</div>
+            </div>
+            <div class="pl-appt pl-a-planned" style="top:560px;height:53px" onclick="openModal('modal-rdv')">
+              <div class="pl-appt-time">16:00 – 16:45</div>
+              <div class="pl-appt-client">Sara M.</div>
+              <div class="pl-appt-svc">Coupe femme</div>
+            </div>
+          </div>
+
+          <!-- Mer 20 -->
+          <div class="wk-day-col">
+            <div class="pl-appt pl-a-confirmed" style="top:175px;height:70px" onclick="openModal('modal-rdv')">
+              <div class="pl-appt-time">10:30 – 11:30</div>
+              <div class="pl-appt-client">Siham B.</div>
+              <div class="pl-appt-svc">Brushing</div>
+            </div>
+            <div class="pl-appt pl-a-planned" style="top:420px;height:53px" onclick="openModal('modal-rdv')">
+              <div class="pl-appt-time">14:00 – 14:45</div>
+              <div class="pl-appt-client">Amina L.</div>
+              <div class="pl-appt-svc">Coupe courte</div>
+            </div>
+          </div>
+
+          <!-- Jeu 21 -->
+          <div class="wk-day-col">
+            <div class="pl-appt pl-a-planned" style="top:350px;height:140px" onclick="openModal('modal-rdv')">
+              <div class="pl-appt-time">13:00 – 15:00</div>
+              <div class="pl-appt-client">Yousra T.</div>
+              <div class="pl-appt-svc">Balayage complet</div>
+            </div>
+            <div class="pl-appt pl-a-confirmed" style="top:595px;height:35px" onclick="openModal('modal-rdv')">
+              <div class="pl-appt-time">16:30 – 17:00</div>
+              <div class="pl-appt-client">Karim O.</div>
+            </div>
+          </div>
+
+          <!-- Ven 22 -->
+          <div class="wk-day-col">
+            <div class="pl-appt pl-a-planned" style="top:70px;height:70px" onclick="openModal('modal-rdv')">
+              <div class="pl-appt-time">09:00 – 10:00</div>
+              <div class="pl-appt-client">Leila B.</div>
+              <div class="pl-appt-svc">Coupe + Soin</div>
+            </div>
+            <div class="pl-appt pl-a-planned" style="top:455px;height:47px" onclick="openModal('modal-rdv')">
+              <div class="pl-appt-time">14:30 – 15:10</div>
+              <div class="pl-appt-client">Salma T.</div>
+              <div class="pl-appt-svc">Pédicure simple</div>
+            </div>
+          </div>
+
+          <!-- Sam 23 -->
+          <div class="wk-day-col">
+            <div class="pl-appt pl-a-planned" style="top:140px;height:105px" onclick="openModal('modal-rdv')">
+              <div class="pl-appt-time">10:00 – 11:30</div>
+              <div class="pl-appt-client">Ilham R.</div>
+              <div class="pl-appt-svc">Mèches légères</div>
+            </div>
+            <div class="pl-appt pl-a-planned" style="top:490px;height:70px" onclick="openModal('modal-rdv')">
+              <div class="pl-appt-time">15:00 – 16:00</div>
+              <div class="pl-appt-client">Hanae B.</div>
+              <div class="pl-appt-svc">Brushing</div>
+            </div>
+          </div>
+
+          <!-- Dim 24 — Fermé -->
+          <div class="wk-day-col closed-col">
+            <span class="wk-closed-lbl">Fermé</span>
+          </div>
+
+        </div><!-- /wk-cols -->
+      </div><!-- /wk-body -->
+    </div><!-- /wk-inner -->
+  </div><!-- /pl-semaine -->
+
+  <!-- ── VUE MOIS ── -->
+  <div id="pl-mois" class="mo-outer" style="display:none">
+    <!-- Day name headers -->
+    <div class="mo-day-names">
+      <div class="mo-day-name">Lun</div>
+      <div class="mo-day-name">Mar</div>
+      <div class="mo-day-name">Mer</div>
+      <div class="mo-day-name">Jeu</div>
+      <div class="mo-day-name">Ven</div>
+      <div class="mo-day-name weekend">Sam</div>
+      <div class="mo-day-name weekend">Dim</div>
+    </div>
+    <div class="mo-grid">
+      <!-- Semaine 1 : 27 avr – 3 mai -->
+      <div class="mo-cell other-month"><div class="mo-cell-num">27</div></div>
+      <div class="mo-cell other-month"><div class="mo-cell-num">28</div></div>
+      <div class="mo-cell other-month"><div class="mo-cell-num">29</div></div>
+      <div class="mo-cell other-month"><div class="mo-cell-num">30</div></div>
+      <!-- Passé → gris (terminés) -->
+      <div class="mo-cell"><div class="mo-cell-num">1</div><span class="mo-chip gray">Coupe femme</span><span class="mo-chip gray">Brushing</span></div>
+      <div class="mo-cell weekend-cell"><div class="mo-cell-num">2</div><span class="mo-chip gray">Mèches</span></div>
+      <div class="mo-cell weekend-cell"><div class="mo-cell-num">3</div></div>
+      <!-- Semaine 2 : 4 – 10 mai -->
+      <div class="mo-cell"><div class="mo-cell-num">4</div><span class="mo-chip gray">Balayage</span></div>
+      <div class="mo-cell"><div class="mo-cell-num">5</div><span class="mo-chip gray">Coupe courte</span><span class="mo-chip gray">Pose gel</span></div>
+      <div class="mo-cell"><div class="mo-cell-num">6</div></div>
+      <div class="mo-cell"><div class="mo-cell-num">7</div><span class="mo-chip gray">Mèches comp.</span></div>
+      <div class="mo-cell"><div class="mo-cell-num">8</div><span class="mo-chip gray">Coupe+Soin</span><span class="mo-chip gray">Manucure</span></div>
+      <div class="mo-cell weekend-cell"><div class="mo-cell-num">9</div><span class="mo-chip gray">Brushing</span><span class="mo-chip gray">Coupe</span><span class="mo-more">+3</span></div>
+      <div class="mo-cell weekend-cell"><div class="mo-cell-num">10</div><span class="mo-chip gray">Balayage</span></div>
+      <!-- Semaine 3 : 11 – 17 mai -->
+      <div class="mo-cell"><div class="mo-cell-num">11</div><span class="mo-chip gray">Coupe femme</span></div>
+      <div class="mo-cell"><div class="mo-cell-num">12</div><span class="mo-chip gray">Mèches</span><span class="mo-chip gray">Pédicure</span></div>
+      <div class="mo-cell"><div class="mo-cell-num">13</div><span class="mo-chip gray">Brushing</span></div>
+      <div class="mo-cell"><div class="mo-cell-num">14</div></div>
+      <div class="mo-cell"><div class="mo-cell-num">15</div><span class="mo-chip gray">Coupe+Soin</span><span class="mo-chip gray">Balayage</span></div>
+      <div class="mo-cell weekend-cell"><div class="mo-cell-num">16</div><span class="mo-chip gray">Mèches légères</span><span class="mo-chip gray">Coupe</span><span class="mo-more">+2</span></div>
+      <div class="mo-cell weekend-cell"><div class="mo-cell-num">17</div><span class="mo-chip gray">Pose gel</span></div>
+      <!-- Semaine 4 : 18 – 24 mai (aujourd'hui = 19) -->
+      <div class="mo-cell"><div class="mo-cell-num">18</div><span class="mo-chip gray">Coupe femme</span><span class="mo-chip gray">Mèches</span></div>
+      <!-- Aujourd'hui : gris=terminé · or=en cours · bleu=à venir -->
+      <div class="mo-cell today-cell"><div class="mo-cell-num">19</div><span class="mo-chip gray">Coupe+Soin</span><span class="mo-chip gray">Balayage</span><span class="mo-chip gold">Mèches ▶</span><span class="mo-chip blue">Coupe</span></div>
+      <!-- Futur → bleu (planifiés) -->
+      <div class="mo-cell"><div class="mo-cell-num">20</div><span class="mo-chip blue">Brushing</span><span class="mo-chip blue">Coupe courte</span></div>
+      <div class="mo-cell"><div class="mo-cell-num">21</div><span class="mo-chip blue">Balayage comp.</span></div>
+      <div class="mo-cell"><div class="mo-cell-num">22</div><span class="mo-chip blue">Coupe+Soin</span><span class="mo-chip blue">Pédicure</span></div>
+      <div class="mo-cell weekend-cell"><div class="mo-cell-num">23</div><span class="mo-chip blue">Mèches légères</span><span class="mo-chip blue">Brushing</span></div>
+      <div class="mo-cell weekend-cell"><div class="mo-cell-num">24</div></div>
+      <!-- Semaine 5 : 25 – 31 mai -->
+      <div class="mo-cell"><div class="mo-cell-num">25</div><span class="mo-chip blue">Coupe femme</span></div>
+      <div class="mo-cell"><div class="mo-cell-num">26</div><span class="mo-chip blue">Balayage</span><span class="mo-chip blue">Brushing</span></div>
+      <div class="mo-cell"><div class="mo-cell-num">27</div></div>
+      <div class="mo-cell"><div class="mo-cell-num">28</div><span class="mo-chip blue">Mèches</span></div>
+      <div class="mo-cell"><div class="mo-cell-num">29</div><span class="mo-chip blue">Coupe+Soin</span></div>
+      <div class="mo-cell weekend-cell"><div class="mo-cell-num">30</div><span class="mo-chip blue">Pose gel</span><span class="mo-chip blue">Coupe</span></div>
+      <div class="mo-cell weekend-cell"><div class="mo-cell-num">31</div><span class="mo-chip blue">Brushing</span></div>
+      <!-- Semaine 6 : 1 – 7 juin (futur) -->
+      <div class="mo-cell other-month"><div class="mo-cell-num">1</div></div>
+      <div class="mo-cell other-month"><div class="mo-cell-num">2</div><span class="mo-chip blue">Mèches</span></div>
+      <div class="mo-cell other-month"><div class="mo-cell-num">3</div></div>
+      <div class="mo-cell other-month"><div class="mo-cell-num">4</div><span class="mo-chip blue">Coupe</span></div>
+      <div class="mo-cell other-month"><div class="mo-cell-num">5</div></div>
+      <div class="mo-cell other-month weekend-cell"><div class="mo-cell-num">6</div></div>
+      <div class="mo-cell other-month weekend-cell"><div class="mo-cell-num">7</div></div>
+    </div>
+  </div><!-- /pl-mois -->
+
+</div><!-- /view-planning -->
+
+</div><!-- /main -->
+
+<!-- ── MODAL : Nouveau / Modifier RDV ── -->
+<div class="modal-overlay" id="modal-rdv" onclick="handleOverlayClick(event)">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-header-dot"></div>
+      <div class="modal-title">Nouveau rendez-vous</div>
+      <button class="modal-close" onclick="closeModal('modal-rdv')">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+
+    <div class="modal-body">
+
+      <!-- Client -->
+      <div>
+        <label class="form-label">Client</label>
+        <div class="filter-input" style="width:100%;max-width:none">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="text" placeholder="Nom ou téléphone…" />
+        </div>
+      </div>
+
+      <!-- Date + Heure -->
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Date</label>
+          <input class="form-input" type="date" value="2026-05-19" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Heure</label>
+          <input class="form-input" type="time" value="15:00" />
+        </div>
+      </div>
+
+      <div class="form-divider"></div>
+
+      <!-- Prestations -->
+      <div>
+        <label class="form-label" style="margin-bottom:10px">Prestations</label>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <div class="service-pick-row selected" onclick="toggleServicePick(this)">
+            <div class="sp-check">
+              <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+            </div>
+            <div class="sp-info">
+              <div class="sp-name">Coupe femme</div>
+              <div class="sp-dur">45 min</div>
+            </div>
+            <div class="sp-price">120 MAD</div>
+          </div>
+          <div class="service-pick-row" onclick="toggleServicePick(this)">
+            <div class="sp-check"></div>
+            <div class="sp-info">
+              <div class="sp-name">Brushing</div>
+              <div class="sp-dur">30 min</div>
+            </div>
+            <div class="sp-price">80 MAD</div>
+          </div>
+          <div class="service-pick-row" onclick="toggleServicePick(this)">
+            <div class="sp-check"></div>
+            <div class="sp-info">
+              <div class="sp-name">Mèches complètes</div>
+              <div class="sp-dur">90 min</div>
+            </div>
+            <div class="sp-price">350 MAD</div>
+          </div>
+          <div class="service-pick-row" onclick="toggleServicePick(this)">
+            <div class="sp-check"></div>
+            <div class="sp-info">
+              <div class="sp-name">Pose gel mains</div>
+              <div class="sp-dur">60 min</div>
+            </div>
+            <div class="sp-price">180 MAD</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Staff + Source -->
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Collaborateur</label>
+          <select class="form-input" style="cursor:pointer">
+            <option>Ahlam Niro</option>
+            <option>Hicham Nounoui</option>
+            <option>Rachida Mouga</option>
+            <option>Khadija Berreda</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Source</label>
+          <select class="form-input" style="cursor:pointer">
+            <option>Salon</option>
+            <option>Téléphone</option>
+            <option>WhatsApp</option>
+            <option>En ligne</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Note -->
+      <div class="form-group">
+        <label class="form-label">Note</label>
+        <input class="form-input" type="text" placeholder="Allergie, préférence, remarque…" />
+      </div>
+
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal('modal-rdv')">Annuler</button>
+      <button class="btn-save">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+        Enregistrer
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+let activeDropdown = null
+
+function toggleDropdown(e, btn) {
+  e.stopPropagation()
+  const dd = btn.nextElementSibling
+  if (activeDropdown && activeDropdown !== dd) {
+    activeDropdown.classList.remove('open')
+  }
+  dd.classList.toggle('open')
+  activeDropdown = dd.classList.contains('open') ? dd : null
+}
+
+document.addEventListener('click', () => {
+  if (activeDropdown) { activeDropdown.classList.remove('open'); activeDropdown = null }
+})
+
+function selectRow(tr) {
+  if (tr.classList.contains('now-row')) return
+  document.querySelectorAll('tbody tr.selected').forEach(r => r.classList.remove('selected'))
+  tr.classList.add('selected')
+}
+
+function setView(v, btn) {
+  document.querySelectorAll('.vt-btn').forEach(b => b.classList.remove('active'))
+  btn.classList.add('active')
+  const listEl = document.getElementById('view-list')
+  const planEl = document.getElementById('view-planning')
+  if (v === 'list') {
+    listEl.style.display = 'flex'
+    planEl.style.display = 'none'
+  } else {
+    listEl.style.display = 'none'
+    planEl.style.display = 'flex'
+  }
+}
+
+const PL_DATE_LABELS = {
+  jour:    'Mardi 19 mai 2026',
+  semaine: '18 – 24 mai 2026',
+  mois:    'Mai 2026'
+}
+
+function setPlanView(v, btn) {
+  document.querySelectorAll('.pl-sub-btn').forEach(b => b.classList.remove('active'))
+  btn.classList.add('active')
+  document.getElementById('pl-jour').style.display    = v === 'jour'    ? '' : 'none'
+  document.getElementById('pl-semaine').style.display = v === 'semaine' ? '' : 'none'
+  document.getElementById('pl-mois').style.display    = v === 'mois'    ? '' : 'none'
+  document.getElementById('pl-nav-label').textContent = PL_DATE_LABELS[v]
+}
+
+function openModal(id) {
+  document.getElementById(id).classList.add('open')
+  document.body.style.overflow = 'hidden'
+}
+
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open')
+  document.body.style.overflow = ''
+}
+
+function handleOverlayClick(e) {
+  if (e.target === e.currentTarget) closeModal(e.currentTarget.id)
+}
+
+function toggleServicePick(el) {
+  el.classList.toggle('selected')
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    document.querySelectorAll('.modal-overlay.open').forEach(m => closeModal(m.id))
+  }
+})
+</script>
+</body>
+</html>

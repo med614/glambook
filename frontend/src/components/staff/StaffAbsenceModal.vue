@@ -137,26 +137,26 @@ function getStatusLabel(a) {
             <!-- Alerte conflits -->
             <div v-if="showConflictWarning" class="conflict-warning">
                 <div class="conflict-header">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:#d97706;flex-shrink:0"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--orange);flex-shrink:0"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
                     <strong>{{ conflictingRdvs.length }} RDV prévu{{ conflictingRdvs.length > 1 ? 's' : '' }} sur cette période</strong>
                 </div>
-                <p style="font-size:12.5px;color:#92400e;margin:6px 0 10px;">
+                <p style="font-size:12.5px;color:var(--orange);margin:6px 0 10px;">
                     {{ staff?.name }} est affecté à ces rendez-vous. Veuillez les réaffecter à un autre collaborateur avant de poser ce congé.
                 </p>
                 <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:12px;">
                     <div
                         v-for="rdv in conflictingRdvs"
                         :key="rdv.id"
-                        style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:#fff8eb;border:1px solid #fde68a;border-radius:6px;font-size:12.5px;"
+                        style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--orange-soft);border:1px solid var(--orange);border-radius:6px;font-size:12.5px;"
                     >
                         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-                        <span style="font-weight:700;color:#1e293b;">{{ rdv.client }}</span>
-                        <span style="color:#92400e;">— {{ rdv.date }}</span>
+                        <span style="font-weight:700;color:var(--text-main);">{{ rdv.client }}</span>
+                        <span style="color:var(--orange);">— {{ rdv.date }}</span>
                     </div>
                 </div>
                 <div style="display:flex;gap:8px;">
                     <button class="btn btn-secondary" style="flex:1;" @click="cancelConflict">Annuler</button>
-                    <button class="btn" style="flex:1;background:#d97706;color:#fff;" @click="addAbsence" :disabled="isAdding">
+                    <button class="btn" style="flex:1;background:var(--orange);color:#fff;" @click="addAbsence" :disabled="isAdding">
                         Poser quand même
                     </button>
                 </div>
@@ -198,9 +198,9 @@ function getStatusLabel(a) {
                     <div
                         v-for="a in upcomingAbsences"
                         :key="a.id"
-                        style="display:flex;align-items:center;gap:12px;padding:10px 14px;background:#fff;border:1px solid var(--border);border-radius:8px;"
+                        style="display:flex;align-items:center;gap:12px;padding:10px 14px;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;"
                     >
-                        <span style="width:8px;height:8px;border-radius:50%;flex-shrink:0;background:#ef4444;"></span>
+                        <span style="width:8px;height:8px;border-radius:50%;flex-shrink:0;background:var(--red);"></span>
                         <div style="flex:1;min-width:0;">
                             <div style="font-size:13px;font-weight:600;color:var(--text-main);">
                                 {{ formatDate(a.start_date) }} → {{ formatDate(a.end_date) }}
@@ -209,11 +209,11 @@ function getStatusLabel(a) {
                         <span
                             style="font-size:10px;font-weight:700;text-transform:uppercase;padding:3px 8px;border-radius:6px;"
                             :style="getStatusLabel(a) === 'En cours'
-                                ? 'background:#dcfce7;color:#166534'
-                                : 'background:#f1f5f9;color:#64748b'"
+                                ? 'background:var(--green-soft);color:var(--green)'
+                                : 'background:var(--bg-soft);color:var(--text-muted)'"
                         >{{ getStatusLabel(a) }}</span>
                         <button
-                            style="width:30px;height:30px;border:none;background:transparent;color:#94a3b8;cursor:pointer;border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0;"
+                            style="width:30px;height:30px;border:none;background:transparent;color:var(--text-light);cursor:pointer;border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0;"
                             @click="removeAbsence(a.id)"
                             title="Supprimer"
                         >
@@ -254,8 +254,8 @@ function getStatusLabel(a) {
 .form-group label { font-size: 12.5px; font-weight: 600; color: var(--text-muted); }
 
 .conflict-warning {
-    background: #fffbeb;
-    border: 1.5px solid #fde68a;
+    background: var(--orange-soft);
+    border: 1px solid var(--orange);
     border-radius: 10px;
     padding: 14px 16px;
 }
@@ -264,7 +264,7 @@ function getStatusLabel(a) {
     align-items: center;
     gap: 8px;
     font-size: 14px;
-    color: #92400e;
+    color: var(--orange);
     margin-bottom: 4px;
 }
 </style>
